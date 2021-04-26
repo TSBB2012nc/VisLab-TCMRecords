@@ -4,6 +4,17 @@ const height = window.innerHeight;
 const padding = { top: 40, right: 40, bottom: 40, left: 40 };
 const plotAreaWidth = width - padding.left - padding.right;
 const plotAreaHeight = height - padding.top - padding.bottom;
+var x = d3.scaleLinear()
+    .range([0, width]);
+
+var y = d3.scaleLinear()
+    .range([height, 0]);
+
+var xAxis = d3.axisBottom(x);
+
+var yAxis = d3.axisLeft(y);
+var color = d3.scaleOrdinal(d3.schemeCategory10);
+
 
 // create a container with position relative to handle our canvas layer
 // and our SVG interaction layer
@@ -123,18 +134,89 @@ function lassoFunction()
 }
 
 
-// make up fake data
-const points = d3.range(500).map(() => ({
-  x: Math.random() * plotAreaWidth,
-  y: Math.random() * plotAreaHeight,
-  r: Math.random() * 5 + 2,
-  color: 'tomato',
-}));
+// // make up fake data
+// const points = d3.range(500).map(() => ({
+//   x: Math.random() * plotAreaWidth,
+//   y: Math.random() * plotAreaHeight,
+//   r: Math.random() * 5 + 2,
+//   color: 'tomato',
+// }));
 
-// initial draw of points
-drawPoints();
-lassoFunction();
+// // initial draw of points
+// drawPoints();
+// lassoFunction();
+// const points;
+d3.tsv("flowers.tsv", function(error, data) {
+  data.forEach(function(d) {
+    d.sepalLength = +d.sepalLength;
+    d.sepalWidth = +d.sepalWidth;
+  });
 
+
+  x.domain(d3.extent(data, function(d) { return d.sepalWidth; })).nice();
+  y.domain(d3.extent(data, function(d) { return d.sepalLength; })).nice();
+
+  interactionSvg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("x", width)
+      .attr("y", -6)
+      .style("text-anchor", "end")
+      .text("Sepal Width (cm)");
+
+      interactionSvg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Sepal Length (cm)")
+
+      interactionSvg.selectAll(".dot")
+      .data(data)
+    .enter().append("circle")
+      .attr("id",function(d,i) {return "dot_" + i;}) // added
+      .attr("class", "dot")
+      .attr("r", 3.5)
+      .attr("cx", function(d) { return x(d.sepalWidth); })
+      .attr("cy", function(d) { return y(d.sepalLength); })
+      .style("fill", function(d) { return color(d.species); });
+
+     const points=data.map((d)=>({
+        x: d.sepalLength,
+        y: d.sepalLength,
+        r: 3.5,
+        color: color(d.species),
+      }));
+
+   lassoFunction();
+
+  var legend = interactionSvg.selectAll(".legend")
+      .data(color.domain())
+    .enter().append("g")
+      .attr("class", "legend")
+      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+  legend.append("rect")
+      .attr("x", width - 18)
+      .attr("width", 18)
+      .attr("height", 18)
+      .style("fill", color);
+
+  legend.append("text")
+      .attr("x", width - 24)
+      .attr("y", 9)
+      .attr("dy", ".35em")
+      .style("text-anchor", "end")
+      .text(function(d) { return d; });
+
+});
 
 
 
