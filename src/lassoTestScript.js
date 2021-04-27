@@ -52,23 +52,24 @@ var gBrushes = interactionSvg.append('g')
 
 // We also keep the actual d3-brush functions and their IDs in a list:
 var brushes = [];
-
-
+var gPoints = [];
+var gSelectedPoints = [];
 
 // when a lasso is completed, filter to the points within the lasso polygon
 function handleLassoEnd(lassoPolygon) {
-  const selectedPoints = points.filter(d => {
+var points = gPoints;
+gSelectedPoints = points.filter(d => {
     // note we have to undo any transforms done to the x and y to match with the
     // coordinate system in the svg.
-    const x = d.x + padding.left;
-    const y = d.y + padding.top;
+    const x = d.x ;//+ padding.left;
+    const y = d.y ;//+ padding.top;
 
     return d3.polygonContains(lassoPolygon, [x, y]);
   });
   // Add brush to the brush array
   var brush = lassoFunction();
-  brushes.push({id: brushes.length, brush: brush});
-  updateSelectedPoints(selectedPoints);
+  brushes.push({id: brushes.length, brush: brush, points: gSelectedPoints});
+  updateSelectedPoints(gSelectedPoints);
 }
 
 // reset selected points when starting a new polygon
@@ -78,6 +79,7 @@ function handleLassoStart(lassoPolygon) {
 
 // when we have selected points, update the colors and redraw
 function updateSelectedPoints(selectedPoints) {
+    var points = gPoints;
   // if no selected points, reset to all tomato
   if (!selectedPoints.length) {
     // reset all
@@ -96,16 +98,18 @@ function updateSelectedPoints(selectedPoints) {
   }
 
   // redraw with new colors
-  drawPoints();
+    drawPoints();
 }
 
 // helper to actually draw points on the canvas
 function drawPoints() {
+    var points = gPoints;
   const context = canvas.node().getContext('2d');
   context.save();
   context.clearRect(0, 0, width, height);
-  context.translate(padding.left, padding.top);
+//   context.translate(padding.left, padding.top);
 
+    // Draw based on colors of brushes
   // draw each point as a rectangle
   for (let i = 0; i < points.length; ++i) {
     const point = points[i];
@@ -152,9 +156,18 @@ d3.tsv("flowers.tsv", function(error, data) {
     d.sepalWidth = +d.sepalWidth;
   });
 
-
   x.domain(d3.extent(data, function(d) { return d.sepalWidth; })).nice();
   y.domain(d3.extent(data, function(d) { return d.sepalLength; })).nice();
+
+  gPoints = data.map(function(d,i){
+    var obj={};
+    obj.x = x(d.sepalWidth);
+    obj.y = y(d.sepalLength);
+    obj.r = 5;
+    obj.id = i;
+    return obj;
+});
+
 
   interactionSvg.append("g")
       .attr("class", "x axis")
@@ -178,23 +191,16 @@ d3.tsv("flowers.tsv", function(error, data) {
       .style("text-anchor", "end")
       .text("Sepal Length (cm)")
 
-      interactionSvg.selectAll(".dot")
-      .data(data)
-    .enter().append("circle")
-      .attr("id",function(d,i) {return "dot_" + i;}) // added
-      .attr("class", "dot")
-      .attr("r", 3.5)
-      .attr("cx", function(d) { return x(d.sepalWidth); })
-      .attr("cy", function(d) { return y(d.sepalLength); })
-      .style("fill", function(d) { return color(d.species); });
-
-     const points=data.map((d)=>({
-        x: d.sepalLength,
-        y: d.sepalLength,
-        r: 3.5,
-        color: color(d.species),
-      }));
-
+    //   interactionSvg.selectAll(".dot")
+    //   .data(data)
+    // .enter().append("circle")
+    //   .attr("id",function(d,i) {return "dot_" + i;}) // added
+    //   .attr("class", "dot")
+    //   .attr("r", 3.5)
+    //   .attr("cx", function(d) { return x(d.sepalWidth); })
+    //   .attr("cy", function(d) { return y(d.sepalLength); })
+    //   .style("fill", function(d) { return color(d.species); });
+    drawPoints();
    lassoFunction();
 
   var legend = interactionSvg.selectAll(".legend")
