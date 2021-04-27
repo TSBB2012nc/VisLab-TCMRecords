@@ -3,6 +3,9 @@ const width = window.innerWidth;
 const height = window.innerHeight;
 const padding = { top: 40, right: 40, bottom: 40, left: 40 };
 const plotAreaWidth = width - padding.left - padding.right;
+
+
+
 const plotAreaHeight = height - padding.top - padding.bottom;
 var x = d3.scaleLinear()
     .range([0, width]);
@@ -13,7 +16,7 @@ var y = d3.scaleLinear()
 var xAxis = d3.axisBottom(x);
 
 var yAxis = d3.axisLeft(y);
-var colorMap = d3.scaleOrdinal(d3.schemeCategory10);
+var colorMap = d3.scaleOrdinal(d3.schemeCategory20);
 
 
 // create a container with position relative to handle our canvas layer
@@ -63,7 +66,8 @@ gSelectedPoints = points.filter(d => {
     // coordinate system in the svg.
     const x = d.x ;//+ padding.left;
     const y = d.y ;//+ padding.top;
-
+    // const name = d.name;
+    // const pinyin = d.pinyin;
     return d3.polygonContains(lassoPolygon, [x, y]);
   });
   // Add brush to the brush array
@@ -123,6 +127,8 @@ function drawPoints() {
     context.beginPath();
     context.arc(point.x, point.y, point.r, 0, 2 * Math.PI);
     context.fill();
+    context.font = '24px sans';
+    context.fillText(point.name, point.x+ 5, point.y + 5);
   }
 
   for(var j = 0; j < brushes.length; j++){
@@ -167,21 +173,36 @@ function lassoFunction()
 // drawPoints();
 // lassoFunction();
 // const points;
-d3.tsv("flowers.tsv", function(error, data) {
-  data.forEach(function(d) {
-    d.sepalLength = +d.sepalLength;
-    d.sepalWidth = +d.sepalWidth;
-  });
 
-  x.domain(d3.extent(data, function(d) { return d.sepalWidth; })).nice();
-  y.domain(d3.extent(data, function(d) { return d.sepalLength; })).nice();
+// change to our data
+
+// d3.tsv("flowers.tsv", function(error, data) {
+//   data.forEach(function(d) {
+//     d.symp2 = +d.symp2;
+//     d.symp1 = +d.symp1;
+//   });
+
+d3.csv("data.csv", function (error, data) {
+    data.forEach(function (d) {
+        d.symp1 = +d.symp1;
+        d.symp2 = +d.symp2;
+        d.sqww1 = +d.sqww1;
+        d.sqww2 = +d.sqww2;
+        d.name = d.Name;
+        d.pinyin = d.Pinyin;
+    });
+  
+  x.domain(d3.extent(data, function(d) { return d.symp1; })).nice();
+  y.domain(d3.extent(data, function(d) { return d.symp2; })).nice();
 
   gPoints = data.map(function(d,i){
     var obj={};
-    obj.x = x(d.sepalWidth);
-    obj.y = y(d.sepalLength);
+    obj.x = x(d.symp1);
+    obj.y = y(d.symp2);
     obj.r = 5;
     obj.id = i;
+    obj.pinyin = d.Pinyin;
+    obj.name = d.Name;
     return obj;
 });
 
@@ -214,10 +235,14 @@ d3.tsv("flowers.tsv", function(error, data) {
     //   .attr("id",function(d,i) {return "dot_" + i;}) // added
     //   .attr("class", "dot")
     //   .attr("r", 3.5)
-    //   .attr("cx", function(d) { return x(d.sepalWidth); })
-    //   .attr("cy", function(d) { return y(d.sepalLength); })
-    //   .style("fill", function(d) { return color(d.species); });
-    drawPoints();
+    //   .attr("cx", function(d) { return x(d.symp1); })
+    //   .attr("cy", function(d) { return y(d.symp2); })
+    //   .style("fill", function(d) { return colorMap(d.species); })
+    //     .append("text")
+    //     attr("x", function(d) { return x(d.x + 5); })
+    //     .attr("y", function(d) { return y(d.y + 5); })
+    //     .text("fooLabelsOfScatterPoints");
+    // drawPoints();
    lassoFunction();
 
   var legend = interactionSvg.selectAll(".legend")

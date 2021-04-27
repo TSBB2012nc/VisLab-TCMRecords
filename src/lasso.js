@@ -13,7 +13,7 @@ function lasso() {
   const dispatch = d3.dispatch('start', 'end');
 
   // distance last point has to be to first point before it auto closes when mouse is released
-  let closeDistance = 75;
+  let closeDistance = 175;
 
   function lasso(root) {
     // append a <g> with a rect
