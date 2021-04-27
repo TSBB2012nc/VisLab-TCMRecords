@@ -13,7 +13,7 @@ var y = d3.scaleLinear()
 var xAxis = d3.axisBottom(x);
 
 var yAxis = d3.axisLeft(y);
-var color = d3.scaleOrdinal(d3.schemeCategory10);
+var colorMap = d3.scaleOrdinal(d3.schemeCategory10);
 
 
 // create a container with position relative to handle our canvas layer
@@ -68,7 +68,11 @@ gSelectedPoints = points.filter(d => {
   });
   // Add brush to the brush array
   var brush = lassoFunction();
-  brushes.push({id: brushes.length, brush: brush, points: gSelectedPoints});
+  brushes.push({
+    id: brushes.length, 
+    brush: brush, 
+    color: colorMap(brushes.length),
+    points: gSelectedPoints});
   updateSelectedPoints(gSelectedPoints);
 }
 
@@ -121,6 +125,19 @@ function drawPoints() {
     context.fill();
   }
 
+  for(var j = 0; j < brushes.length; j++){
+    const brushedpoints = brushes[j].points;
+    for(var i = 0; i < brushedpoints.length; i++){
+        const point = brushedpoints[i];
+          // draw circles
+          context.fillStyle = brushes[j].color;
+          context.beginPath();
+          context.arc(point.x, point.y, point.r, 0, 2 * Math.PI);
+          context.fill();
+    }
+
+
+  }
   context.restore();
 }
 
@@ -204,7 +221,7 @@ d3.tsv("flowers.tsv", function(error, data) {
    lassoFunction();
 
   var legend = interactionSvg.selectAll(".legend")
-      .data(color.domain())
+      .data(colorMap.domain())
     .enter().append("g")
       .attr("class", "legend")
       .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
@@ -213,7 +230,7 @@ d3.tsv("flowers.tsv", function(error, data) {
       .attr("x", width - 18)
       .attr("width", 18)
       .attr("height", 18)
-      .style("fill", color);
+      .style("fill", colorMap);
 
   legend.append("text")
       .attr("x", width - 24)
