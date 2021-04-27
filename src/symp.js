@@ -192,17 +192,17 @@ d3.csv("data.csv", function (error, data) {
         d.pinyin = d.Pinyin;
     });
   
-//   x.domain(d3.extent(data, function(d) { return d.symp1; })).nice();
-//   y.domain(d3.extent(data, function(d) { return d.symp2; })).nice();
-x.domain(d3.extent(data, function(d) { return d.sqww1; })).nice();
-y.domain(d3.extent(data, function(d) { return d.sqww2; })).nice();
+  x.domain(d3.extent(data, function(d) { return d.symp1; })).nice();
+  y.domain(d3.extent(data, function(d) { return d.symp2; })).nice();
+// x.domain(d3.extent(data, function(d) { return d.sqww1; })).nice();
+// y.domain(d3.extent(data, function(d) { return d.sqww2; })).nice();
 
   gPoints = data.map(function(d,i){
     var obj={};
-    // obj.x = x(d.symp1);
-    // obj.y = y(d.symp2);
-    obj.x = x(d.sqww1);
-    obj.y = y(d.sqww2);
+    obj.x = x(d.symp1);
+    obj.y = y(d.symp2);
+    // obj.x = x(d.sqww1);
+    // obj.y = y(d.sqww2);
     obj.r = 5;
     obj.id = i;
     obj.pinyin = d.Pinyin;
