@@ -182,7 +182,7 @@ function lassoFunction()
 //     d.symp1 = +d.symp1;
 //   });
 
-d3.csv("data.csv", function (error, data) {
+d3.csv("newdataRot.csv", function (error, data) {
     data.forEach(function (d) {
         d.symp1 = +d.symp1;
         d.symp2 = +d.symp2;

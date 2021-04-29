@@ -30,7 +30,7 @@ button {
 
 </style>
 <body>
-<script src="https://d3js.org/d3.v2.js"></script>
+<script src="https://d3js.org/d3.v4.js"></script>
 
 
 <div class="chart">
@@ -44,7 +44,7 @@ button {
 var datearray = [];
 var colorrange = [];
 
-
+var keys = [];
 function chart(csvpath, color) {
 
 if (color == "blue") {
@@ -60,7 +60,8 @@ strokecolor = colorrange[0];
 
 // var format = d3.time.format("%m/%d/%y");
 // var format = d3.time.format("%Y/%m/%d");
-var format = d3.time.format("%M %d %Y");
+var format = d3.timeFormat("%M %d %Y");
+var parseDate = d3.timeParse("%M %d %Y");
 
 var margin = {top: 20, right: 40, bottom: 30, left: 30};
 var width = document.body.clientWidth - margin.left - margin.right;
@@ -75,37 +76,47 @@ var tooltip = d3.select("body")
     .style("top", "30px")
     .style("left", "55px");
 
-var x = d3.time.scale()
+var x = d3.scaleTime()
     .range([0, width]);
 
-var y = d3.scale.linear()
+var y = d3.scaleLinear()
     .range([height-10, 0]);
 
-var z = d3.scale.ordinal()
+var z = d3.scaleOrdinal()
     .range(colorrange);
 
-var xAxis = d3.svg.axis()
-    .scale(x)
-    .orient("bottom")
-    .ticks(d3.time.weeks);
+var xAxis = d3.axisBottom(x)
+    .ticks(10);
+    // .ticks(function(d){return d.visit;});
 
-var yAxis = d3.svg.axis()
+var yAxis = d3.axisLeft(y)
     .scale(y);
 
-var yAxisr = d3.svg.axis()
+var yAxisr = d3.axisRight(y)
     .scale(y);
 
-var stack = d3.layout.stack()
-    .offset("silhouette")
-    .values(function(d) { return d.values; })
-    .x(function(d) { return d.visit; })
-    .y(function(d) { return d.value; });
+    // var stack = d3.layout.stack()
+    //     .offset("silhouette")
+    //     .values(function(d) { return d.values; })
+    //     .x(function(d) { return d.visit; })
+    //     .y(function(d) { return d.value; });
+
+// var stack = d3.stack() 
+//    .keys(function(d) { return d.keys; })
+//     .offset(d3.stackOffsetSilhouette)
+//     .value(function(d) { return d.values; });
+
+// // d3.stack()
+//     // .offset("silhouette")
+//     .values(function(d) { return d.values; })
+//     .x(function(d) { return d.visit; })
+//     .y(function(d) { return d.value; });
 
 var nest = d3.nest()
     .key(function(d) { return d.key; });
 
-var area = d3.svg.area()
-    .interpolate("cardinal")
+var area = d3.area()
+    .curve("cardinal")
     .x(function(d) { return x(d.visit); })
     .y0(function(d) { return y(d.y0); })
     .y1(function(d) { return y(d.y0 + d.y); });
@@ -124,7 +135,7 @@ var graph = d3.csv(csvpath, function(data) {
   var maxTimeSteps = -1;
   var allDates=[];
   data.forEach(function(d,i) {
-    d.date = format.parse(d.date);
+    d.date = parseDate(d.date);
     d.value = +d.value;
     d.visit = +d.visit;
   });
@@ -166,7 +177,7 @@ var graph = d3.csv(csvpath, function(data) {
   }
   console.log(fixedData);
   // Write out fulldataByKey to csv
-  var csvstring = d3.csv.format(
+  var csvstring = d3.csv(
       fixedData.map(function(d, i) {
   return [
     d.key, // Assuming d.year is a Date object.
@@ -177,7 +188,14 @@ var graph = d3.csv(csvpath, function(data) {
     }));
     console.log(csvstring);
 
-  var layers = stack(nest.entries(data));
+  var dataForStack =nest.entries(data);
+  var keys = Array.from(Array(dataForStack.length).keys());
+  var stackX = d3.stack() 
+   .keys(keys)
+    .offset(d3.stackOffsetSilhouette)
+ var layers = stackX(dataForStack);
+
+  // var layers = stack.keys(keys)(dataForStack);
 
 //   x.domain(d3.extent(data, function(d) { return d.date; }));
 x.domain(d3.extent(data, function(d) { return d.visit; }));
@@ -206,11 +224,11 @@ x.domain(d3.extent(data, function(d) { return d.visit; }));
   svg.append("g")
       .attr("class", "y axis")
       .attr("transform", "translate(" + width + ", 0)")
-      .call(yAxis.orient("right"));
+      .call(yAxisr);
 
   svg.append("g")
       .attr("class", "y axis")
-      .call(yAxis.orient("left"));
+      .call(yAxis);
 
   svg.selectAll(".layer")
     .attr("opacity", 1)

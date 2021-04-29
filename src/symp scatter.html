@@ -130,7 +130,7 @@ var lasso = d3.lasso()
 // Init the lasso on the svg:g that contains the dots
 svg.call(lasso);
 //////////////////////////////
-d3.csv("data.csv", function(error, data) {
+d3.csv("newdata.csv", function(error, data) {
   data.forEach(function(d) {
     d.symp1 = +d.symp1;
     d.symp2 = +d.symp2;
