@@ -37,12 +37,55 @@ button {
 </div>
 
 <script>
+  // Save data to CSV
+  function exportToCsv(filename, rows) {
+    var processRow = function (row) {
+      var finalVal = '';
+      for (var j = 0; j < row.length; j++) {
+        var innerValue = row[j] === null ? '' : row[j].toString();
+        if (row[j] instanceof Date) {
+          innerValue = row[j].toLocaleString();
+        };
+        var result = innerValue.replace(/"/g, '""');
+        if (result.search(/("|,|\n)/g) >= 0)
+          result = '"' + result + '"';
+        if (j > 0)
+          finalVal += ',';
+        finalVal += result;
+      }
+      return finalVal + '\n';
+    };
 
- chart("fixedmedDates.csv", "orange");
+    var csvFile = '';
+    for (var i = 0; i < rows.length; i++) {
+      csvFile += processRow(rows[i]);
+    }
+
+    var blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });
+    if (navigator.msSaveBlob) { // IE 10+
+      navigator.msSaveBlob(blob, filename);
+    } else {
+      var link = document.createElement("a");
+      if (link.download !== undefined) { // feature detection
+        // Browsers that support HTML5 download attribute
+        var url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    }
+  }
+
+//  chart("fixedmedDates.csv", "orange");
+ chart("medByVisit.csv", "orange");
 // chart("medicalRecordsUTF8.csv", "orange");
 // chart("data.csv", "orange");
 var datearray = [];
 var colorrange = [];
+
 
 var keys = [];
 function chart(csvpath, color) {
@@ -116,8 +159,7 @@ var nest = d3.nest()
     .key(function(d) { return d.key; });
 
 var area = d3.area()
-    .curve("cardinal")
-    .x(function(d) { return x(d.visit); })
+    .x(function(d) { return x(d.data.visit); })
     .y0(function(d) { return y(d.y0); })
     .y1(function(d) { return y(d.y0 + d.y); });
 
@@ -141,65 +183,107 @@ var graph = d3.csv(csvpath, function(data) {
   });
   // transform data to a matrix (rows: date, columns: keys)
 
-  var dataByKey =nest.entries(data);
-   // get unique dates
-  var dataByDate = d3.nest()
-  .key(function(d) { return d.date; })
-  .entries(data);
-  console.log(dataByDate);
-  var fulldataByKey = dataByKey;
-  var fixedData = [];
-  // Fill empty dates for each medicine
-  for(var i = 0; i < dataByKey.length; i++)
-  {
-    for(var k = 0; k < dataByDate.length; k++) // all dates
-      {
-          var dateFound = false;
-        for(var j = 0; j < dataByKey[i].values.length; j++) // appearances of the medicine
-        {
-            if(dataByKey[i].values[j].date==dataByDate[k].key)
-            {
-                fulldataByKey[i].values.push({key: dataByKey[i].key, value: dataByKey[i].values[j].value, date: dataByDate[k].key});    
-                fixedData.push({key: dataByKey[i].key, value: dataByKey[i].values[j].value, date: dataByDate[k].key});
-                dateFound = true;
-                break;
-            } 
-        }
+  // var dataByKey =nest.entries(data);
+  //  // get unique dates
+  // var dataByVisit = d3.nest()
+  // .key(function(d) { return d.visit; })
+  // .entries(data);
 
-        if(!dateFound){
-            fulldataByKey[i].values.push({key: dataByKey[i].key, value: 0, date: dataByDate[k].key});    
-            fixedData.push({key: dataByKey[i].key, value: 0, date: dataByDate[k].key});
-        }
+// // Create empty data structures
+// var matrix0 = [];
+// for(var t = -1; t < dataByVisit.length; t++)
+// // for(var t = 0; t < dataByVisit.length; t++)
+// {
+//   var vectorMed = [];
+//   if(t==-1)
+//      vectorMed.push("visit");
+//   for(var m = -1; m < dataByKey.length; m++)
+//   {
 
-      }
+//     if(t == -1)
+//     {
+//         if(m >=0)
+//         vectorMed.push(dataByKey[m].key);
+//     }
+//     else
+//     {
+//       if(m==-1)
+//         vectorMed.push(t);
+//       else
+//         vectorMed.push(dataByVisit[t].values[m].value);
+
+//     }
+//   }
+//   matrix0.push(vectorMed);
+// }
+// console.log(matrix0);
+
+// exportToCsv("medByVisit.csv", matrix0);
+// // d3.range(dataByVisit.length).map(function (d) { return { x:d }; });
+// //var matrix1 = d3.range(dataByVisit.length).map(function (d) { return { x:d }; });
+
+// // // Fill them with random data
+// // d3.range(n).map(function(d) { bumpLayer(m, matrix0, d); });
+// // d3.range(n).map(function(d) { bumpLayer(m, matrix1, d); });
+
+//   console.log(dataByVisit);
+  // var fulldataByKey = dataByKey;
+  // var fixedData = [];
+  // // Fill empty dates for each medicine
+  // for(var i = 0; i < dataByKey.length; i++)
+  // {
+  //   for(var k = 0; k < dataByDate.length; k++) // all dates
+  //     {
+  //         var dateFound = false;
+  //       for(var j = 0; j < dataByKey[i].values.length; j++) // appearances of the medicine
+  //       {
+  //           if(dataByKey[i].values[j].date==dataByDate[k].key)
+  //           {
+  //               fulldataByKey[i].values.push({key: dataByKey[i].key, value: dataByKey[i].values[j].value, date: dataByDate[k].key});    
+  //               fixedData.push({key: dataByKey[i].key, value: dataByKey[i].values[j].value, date: dataByDate[k].key});
+  //               dateFound = true;
+  //               break;
+  //           } 
+  //       }
+
+  //       if(!dateFound){
+  //           fulldataByKey[i].values.push({key: dataByKey[i].key, value: 0, date: dataByDate[k].key});    
+  //           fixedData.push({key: dataByKey[i].key, value: 0, date: dataByDate[k].key});
+  //       }
+
+  //     }
 
 
-  }
-  console.log(fixedData);
+  // }
+  // console.log(fixedData);
   // Write out fulldataByKey to csv
-  var csvstring = d3.csv(
-      fixedData.map(function(d, i) {
-  return [
-    d.key, // Assuming d.year is a Date object.
-    d.value,
-    d.date,
-    d.visit
-  ];
-    }));
-    console.log(csvstring);
+  // var csvstring = d3.csv(
+  //     fixedData.map(function(d, i) {
+  // return [
+  //   d.key, // Assuming d.year is a Date object.
+  //   d.value,
+  //   d.date,
+  //   d.visit
+  // ];
+  //   }));
+  //   console.log(csvstring);
 
-  var dataForStack =nest.entries(data);
-  var keys = Array.from(Array(dataForStack.length).keys());
-  var stackX = d3.stack() 
+  // List of groups = header of the csv files
+  var keys = data.columns.slice(1);
+
+  var stackGen = d3.stack() 
    .keys(keys)
-    .offset(d3.stackOffsetSilhouette)
- var layers = stackX(dataForStack);
+   .order(d3.stackOrderNone)
+    .offset(d3.stackOffsetSilhouette);
+    // .value(function(d) { return d.values; })
+ var layers = stackGen(data);
 
   // var layers = stack.keys(keys)(dataForStack);
 
 //   x.domain(d3.extent(data, function(d) { return d.date; }));
-x.domain(d3.extent(data, function(d) { return d.visit; }));
-  y.domain([0, d3.max(data, function(d) { return d.y0 + d.y; })]);
+  x.domain(d3.extent(data, function(d) { return d.visit; }));
+  // y.domain([0, d3.max(data, function(d) { return d.y0 + d.y; })]);
+  y.domain([0, 100]);
 
 //   svg.selectAll(".layer")
 //       .data(layers)
@@ -212,7 +296,11 @@ x.domain(d3.extent(data, function(d) { return d.visit; }));
       .data(layers)
     .enter().append("path")
       .attr("class", "layer")
-      .attr("d", function(d) { return area(d.values); })
+      .attr("d", d3.area()
+        .x(function(d, i) { return x(d.data.visit); })
+        .y0(function(d) { return y(d[0]); })
+        .y1(function(d) { return y(d[1]); })
+      )
       .style("fill", function(d, i) { return z(i); });
 
 
