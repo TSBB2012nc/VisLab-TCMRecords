@@ -1,19 +1,27 @@
 // global variables
     // Scatterplot
-var g_scwidth = 400;
-var g_scheight = 400;
+var g_scwidth = 660;
+var g_scheight = 660;
 var g_sgwidth = 1400;
 var g_sgheight = 400;
 var gBrushes = [];
 var gSympData = [];
 var gSqwwData = [];
 var gRxTimeData = [];
-var margin = {left: 10, right: 10, top: 10, bottom: 10};
+var margin = {left: 20, right: 20, top: 20, bottom: 20};
+
+// Scatterplot objects
+var gScatterSymp = [];
+var gScatterSqww = [];
+// Streamgraph objects
+var gStreamRx = [];
+
 
 // We also keep the actual d3-brush functions and their IDs in a list:
 var brushes = [];
 var gPoints = [];
 var gSelectedPoints = [];
+var gNotSelectedPoints = [];
 
 // Lasso functions
 
@@ -25,7 +33,6 @@ var visRoot = [];
 //     .append('div')
 //     .attr('class', 'vis-root')
 //     .style('position', 'relative');
-
 // main canvas to draw on
 var canvas = [];
 //  visRoot
@@ -38,15 +45,17 @@ var canvas = [];
 //     .node()
 //     .getContext('2d')
 //     .scale(screenScale, screenScale);
-
 // add in an interaction layer as an SVG
+
+
+
 // Linked views
 var linkedView1 = [];
 var linkedView2 = [];
 var linkedView3 = [];
 var linkedView4 = [];
 var linkedView5 = [];
-
+var colorMap = d3.scaleOrdinal(d3.schemeCategory10);
 // when a lasso is completed, filter to the points within the lasso polygon
 function handleLassoEnd(lassoPolygon)
 {
@@ -55,18 +64,31 @@ function handleLassoEnd(lassoPolygon)
     gSelectedPoints = points.filter(d => {
         // note we have to undo any transforms done to the x and y to match with the
         // coordinate system in the svg.
-        const x = d.x;//+ padding.left;
-        const y = d.y;//+ padding.top;
+        const x = d.x+ margin.left; //padding.left;
+        const y = d.y+ margin.top; //padding.top;
         // const name = d.name;
         // const pinyin = d.pinyin;
         return d3.polygonContains(lassoPolygon, [x, y]);
     });
+
+    gNotSelectedPoints = [];
+    for(var i = 0; i < gPoints.length; i++){
+        var isSelected = false;
+        for(var j = 0; j < gSelectedPoints.length; j++){
+            if(gSelectedPoints[j].id == gPoints[i].id){
+                isSelected = true;
+                break;
+            }
+        }
+        if(!isSelected)
+        gNotSelectedPoints.push(gPoints[i]);
+    }
     // Add brush to the brush array
-    var brush = lassoFunction();
+    var brush = lassoFunction(d3.select("#scSymp"));
     gBrushes.push({
-        id: brushes.length,
+        id: gBrushes.length,
         brush: brush,
-        color: colorMap(brushes.length),
+        color: colorMap(gBrushes.length),
         points: gSelectedPoints
     });
     updateSelectedPoints(gSelectedPoints);
@@ -92,9 +114,19 @@ function updateSelectedPoints(selectedPoints) {
   } else {
     points.forEach(d => {
       d.color = '#eee';
+      // Check if it's lately selected 
+      for(var i = 0; i < selectedPoints.length; i++)
+      {
+        if(d.id == selectedPoints[i].id)
+        {
+          d.brushedId = gBrushes.length -1 ;
+        }
+      }
+
     });
     selectedPoints.forEach(d => {
       d.color = '#000';
+      d.brushedId = gBrushes.length-1; // Set brushed Id
     });
   }
 
@@ -105,46 +137,32 @@ function updateSelectedPoints(selectedPoints) {
 // helper to actually draw points on the canvas
 function drawPoints() 
 {
-    var points = gPoints;
-    const context = canvas.node().getContext('2d');
-    context.save();
-    context.clearRect(0, 0, width, height);
-    //   context.translate(padding.left, padding.top);
 
-    // Draw based on colors of brushes
-    // draw each point as a rectangle
-    for (let i = 0; i < points.length; ++i) {
-        const point = points[i];
-
-        // draw circles
-        context.fillStyle = point.color;
-        context.beginPath();
-        context.arc(point.x, point.y, point.r, 0, 2 * Math.PI);
-        context.fill();
-        context.font = '24px sans';
-        context.fillText(point.name, point.x + 5, point.y + 5);
-    }
-
-    for (var j = 0; j < brushes.length; j++) {
-        const brushedpoints = brushes[j].points;
-        for (var i = 0; i < brushedpoints.length; i++) {
-            const point = brushedpoints[i];
-            // draw circles
-            context.fillStyle = brushes[j].color;
-            context.beginPath();
-            context.arc(point.x, point.y, point.r, 0, 2 * Math.PI);
-            context.fill();
-        }
-
-
-    }
-  context.restore();
+    const context = d3.select("#scSymp");
+    var allDots = context.selectAll(".dot");
+    allDots.data(gPoints)
+    .attr("r", function(d)    {
+            // check if the point is selected by SelectedPoints
+          for (var i = 0; i < gSelectedPoints.length; i++) {
+            if(gSelectedPoints[i].id == d.id)
+              return 7;
+          }
+          return 3.5;
+        })
+    .style("fill", function(d){
+        // Check all brushed groups
+        if(d.brushedId >= 0)
+          return gBrushes[d.brushedId].color;
+        else
+         return "gray";
+    })
+    .attr("opacity", "1");
 }
 
 // attach lasso to interaction SVG
 function lassoFunction(interactionSvg) 
 {
-    console.log(interactionSvg);
+    // console.log(interactionSvg);
     var lassoInstance = lasso()
         .on('end', handleLassoEnd)
         .on('start', handleLassoStart);
@@ -157,6 +175,7 @@ function lassoFunction(interactionSvg)
 // Draw scatterplots
 function drawSConDiv(data, scSvgName, divName, scwidth, scheight) 
 {
+
 
     var scSvg = d3.select(divName)
         .append("svg")
@@ -203,21 +222,46 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight)
             .style("text-anchor", "end")
             .text("V1");
             
-        scSvg.selectAll(".dot")
+        var node =scSvg.selectAll(".dot")
             .data(data)
-            .enter().append("circle")
+            .enter()
+            .append("g");
+
+            node.append("circle")
                 .attr("class", "dot")
                 .attr("r", 3.5)
                 .attr("cx", function (d) { return x(d.V0); })
                 .attr("cy", function (d) { return y(d.V1); })
                 .style("fill", function (d) { return "gray"; })
-                .style("opacity", 0.5)
-            .append("text")
+                .style("opacity", 0.5);
+
+            node.append("text")
              .text(function(d) {return d.name;})
              .attr("x", function (d) { return x(d.V0) + 10; })
              .attr("y", function (d) { return y(d.V1) + 10; });
 
-        return scSvg;
+             
+    if(scSvgName == "scSymp")
+    gPoints = data.map(function(d,i){
+        var obj={};
+        // obj.x = x(d.symp1);
+        // obj.y = y(d.symp2);
+        obj.x = x(d.V0);
+        obj.y = y(d.V1);
+        obj.r = 5;
+        obj.id = i;
+        obj.pinyin = d.Pinyin;
+        obj.name = d.Name;
+        obj.brushedId = -1; // not selected by any brush
+        return obj;
+    });
+
+    var scatterplot = {};
+    scatterplot.svg = scSvg;
+    scatterplot.xXform = x;
+    scatterplot.yXform = y;
+
+    return scatterplot;
 }
 
 //streamgraph
@@ -381,9 +425,8 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
           svg.selectAll(".layer").transition()
           .duration(250)
           .attr("opacity", function(d, j) {
-            return j != i ? 0.6 : 1;
+            return j != i ? 0.4 : 1;
         })})
-    
         .on("mousemove", function(d, i) {
           mousex = d3.mouse(this);
           mousex = mousex[0];
@@ -459,8 +502,8 @@ function tcmVAmain()
             sqwwdatum.pinyin = data[i].Pinyin;
 
             var sympdatum = {}
-            sympdatum.name = +data[i].Name;
-            sympdatum.pinyin = +data[i].Pinyin;
+            sympdatum.name = data[i].Name;
+            sympdatum.pinyin = data[i].Pinyin;
             sympdatum.V0 = +data[i].symp1;
             sympdatum.V1 = +data[i].symp2;
 
@@ -469,17 +512,19 @@ function tcmVAmain()
         }
 
         
-        drawSConDiv(gSympData, "scSymp", "#exampleSC", g_scwidth, g_scheight);
-        drawSConDiv(gSqwwData, "scSqww", "#exampleSC", g_scwidth, g_scheight);
+        gScatterSymp = drawSConDiv(gSympData, "scSymp", "#exampleSC", g_scwidth, g_scheight);
+     
+        gScatterSqww = drawSConDiv(gSqwwData, "scSqww", "#exampleSC", g_scwidth, g_scheight);
 
         // 3. Initialize brushes 
-        gBrushes = d3.select("#VAcanvas").append('g')
-            .attr("class", "brushes");
+        // gBrushes = d3.select("#VAcanvas").append('g')
+        //     .attr("class", "brushes");
         // 4. Setup lasso
         linkedView1 = d3.select("#scSymp");
         canvas = d3.select("#scSymp");
         linkedView2 = d3.select("#scSqww");
         lassoFunction(linkedView1);
+        drawPoints();
         lassoFunction(linkedView2);
         
 
