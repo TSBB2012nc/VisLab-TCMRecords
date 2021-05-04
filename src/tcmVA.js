@@ -71,6 +71,18 @@ function handleLassoEnd(lassoPolygon)
         return d3.polygonContains(lassoPolygon, [x, y]);
     });
 
+  //   var selectedPointsSqww = points.filter(d => {
+  //     // note we have to undo any transforms done to the x and y to match with the
+  //     // coordinate system in the svg.
+  //     const x2 = d.x2+ margin.left; //padding.left;
+  //     const y2 = d.y2+ margin.top; //padding.top;
+  //     // const name = d.name;
+  //     // const pinyin = d.pinyin;
+  //     return d3.polygonContains(lassoPolygon, [x2, y2]);
+  // });
+
+  // gSelectedPoints = gSelectedPoints.concat(selectedPointsSqww);
+
     gNotSelectedPoints = [];
     for(var i = 0; i < gPoints.length; i++){
         var isSelected = false;
@@ -84,10 +96,47 @@ function handleLassoEnd(lassoPolygon)
         gNotSelectedPoints.push(gPoints[i]);
     }
     // Add brush to the brush array
-    var brush = lassoFunction(d3.select("#scSymp"));
+    // var brush = lassoFunction(d3.select("#scSymp"));
     gBrushes.push({
         id: gBrushes.length,
-        brush: brush,
+        // brush: brush,
+        color: colorMap(gBrushes.length),
+        points: gSelectedPoints
+    });
+    updateSelectedPoints(gSelectedPoints);
+}
+
+function handleLassoEndInstance2(lassoPolygon)
+{
+
+    var points = gPoints;
+    gSelectedPoints  = points.filter(d => {
+      // note we have to undo any transforms done to the x and y to match with the
+      // coordinate system in the svg.
+      const x2 = d.x2+ margin.left; //padding.left;
+      const y2 = d.y2+ margin.top; //padding.top;
+      // const name = d.name;
+      // const pinyin = d.pinyin;
+      return d3.polygonContains(lassoPolygon, [x2, y2]);
+  });
+
+    gNotSelectedPoints = [];
+    for(var i = 0; i < gPoints.length; i++){
+        var isSelected = false;
+        for(var j = 0; j < gSelectedPoints.length; j++){
+            if(gSelectedPoints[j].id == gPoints[i].id){
+                isSelected = true;
+                break;
+            }
+        }
+        if(!isSelected)
+        gNotSelectedPoints.push(gPoints[i]);
+    }
+    // Add brush to the brush array
+    // var brush = lassoFunction(d3.select("#scSymp"));
+    gBrushes.push({
+        id: gBrushes.length,
+        // brush: brush,
         color: colorMap(gBrushes.length),
         points: gSelectedPoints
     });
@@ -137,17 +186,39 @@ function updateSelectedPoints(selectedPoints) {
 // helper to actually draw points on the canvas
 function drawPoints() 
 {
-
-    const context = d3.select("#scSymp");
-    var allDots = context.selectAll(".dot");
-    allDots.data(gPoints)
+  // Need to update multiple linked views!!!
+  // Symptoms view
+    const context1 = d3.select("#scSymp");
+    var allDotsSymp = context1.selectAll(".dot");
+    allDotsSymp.data(gPoints)
     .attr("r", function(d)    {
             // check if the point is selected by SelectedPoints
           for (var i = 0; i < gSelectedPoints.length; i++) {
             if(gSelectedPoints[i].id == d.id)
-              return 7;
+              return 8;
           }
-          return 3.5;
+          return 5.5;
+        })
+    .style("fill", function(d){
+        // Check all brushed groups
+        if(d.brushedId >= 0)
+          return gBrushes[d.brushedId].color;
+        else
+         return "gray";
+    })
+    .attr("opacity", "1");
+
+    // Sqww View
+    const context2 = d3.select("#scSqww");
+    var allDotsSqww = context2.selectAll(".dot");
+    allDotsSqww.data(gPoints)
+    .attr("r", function(d)    {
+            // check if the point is selected by SelectedPoints
+          for (var i = 0; i < gSelectedPoints.length; i++) {
+            if(gSelectedPoints[i].id == d.id)
+              return 8;
+          }
+          return 5.5;
         })
     .style("fill", function(d){
         // Check all brushed groups
@@ -163,7 +234,7 @@ function drawPoints()
 function lassoFunction(interactionSvg) 
 {
     // console.log(interactionSvg);
-    var lassoInstance = lasso()
+    var lassoInstance = lasso(interactionSvg)
         .on('end', handleLassoEnd)
         .on('start', handleLassoStart);
 
@@ -172,11 +243,20 @@ function lassoFunction(interactionSvg)
     return lassoInstance;
 }
 
+function lassoFunctionInstance2(interactionSvg) 
+{
+    // console.log(interactionSvg);
+    var lassoInstance = lasso(interactionSvg)
+        .on('end', handleLassoEndInstance2)
+        .on('start', handleLassoStart);
+
+    interactionSvg.call(lassoInstance);
+
+    return lassoInstance;
+}
 // Draw scatterplots
 function drawSConDiv(data, scSvgName, divName, scwidth, scheight) 
 {
-
-
     var scSvg = d3.select(divName)
         .append("svg")
         .attr('class', scSvgName)
@@ -229,7 +309,7 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight)
 
             node.append("circle")
                 .attr("class", "dot")
-                .attr("r", 3.5)
+                .attr("r", 5.5)
                 .attr("cx", function (d) { return x(d.V0); })
                 .attr("cy", function (d) { return y(d.V1); })
                 .style("fill", function (d) { return "gray"; })
@@ -237,11 +317,12 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight)
 
             node.append("text")
              .text(function(d) {return d.name;})
-             .attr("x", function (d) { return x(d.V0) + 10; })
-             .attr("y", function (d) { return y(d.V1) + 10; });
+             .style("font-size", "12px")
+             .attr("x", function (d) { return x(d.V0) - 30; })
+             .attr("y", function (d) { return y(d.V1) - 10; });
 
              
-    if(scSvgName == "scSymp")
+    if(scSvgName == "scSymp") // just record once
     gPoints = data.map(function(d,i){
         var obj={};
         // obj.x = x(d.symp1);
@@ -513,19 +594,34 @@ function tcmVAmain()
 
         
         gScatterSymp = drawSConDiv(gSympData, "scSymp", "#exampleSC", g_scwidth, g_scheight);
-     
         gScatterSqww = drawSConDiv(gSqwwData, "scSqww", "#exampleSC", g_scwidth, g_scheight);
+
+        gPoints = data.map(function(d,i){
+            var obj={};
+            // obj.x = x(d.symp1);
+            // obj.y = y(d.symp2);
+            obj.x = gScatterSymp.xXform(+d.symp1);
+            obj.y = gScatterSymp.yXform(+d.symp2);
+            obj.x2 = gScatterSqww.xXform(+d.sqww1);
+            obj.y2 = gScatterSqww.yXform(+d.sqww2);
+            obj.r = 5;
+            obj.id = i;
+            obj.pinyin = d.Pinyin;
+            obj.name = d.Name;
+            obj.brushedId = -1; // not selected by any brush
+            return obj;
+        });
 
         // 3. Initialize brushes 
         // gBrushes = d3.select("#VAcanvas").append('g')
         //     .attr("class", "brushes");
         // 4. Setup lasso
-        linkedView1 = d3.select("#scSymp");
+        linkedView1 = d3.select("#scSymp");//.select("svg");
         canvas = d3.select("#scSymp");
-        linkedView2 = d3.select("#scSqww");
+        linkedView2 = d3.select("#scSqww");//.select("svg");
         lassoFunction(linkedView1);
         drawPoints();
-        lassoFunction(linkedView2);
+         lassoFunctionInstance2(linkedView2);
         
 
     });
