@@ -469,10 +469,12 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
     var graph = d3.csv(csvpath, function(data) {
       var maxTimeSteps = -1;
       var allDates=[];
+      var totalVisits = 0;
       data.forEach(function(d,i) {
         d.date = parseDate(d.date);
         d.value = +d.value;
         d.visit = +d.visit;
+        totalVisits = Math.max(d.visit, totalVisits);
       });
       // transform data to a matrix (rows: date, columns: keys)
     
@@ -502,9 +504,11 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
     //       .attr("d", function(d) { return area(d.values); })
     //       .style("fill", function(d, i) { return z(i); });
     
-        svg.selectAll(".layer")
+      var layernode=  svg.selectAll(".layer")
           .data(layers)
-        .enter().append("path")
+        .enter().append("g");
+        
+        layernode.append("path")
           .attr("class", "layer")
           .attr("d", d3.area()
           .curve(d3.curveBasis)
@@ -513,7 +517,19 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
             .y1(function(d) { return y(d[1]); })
           )
           .style("fill", function(d, i) { return z(i); });
-    
+      
+          var randVisit = 0;
+        layernode.append("text")
+        .text(function(d) {return d.key;})
+        .style("font-size", "12px")
+        .attr("x", function (d) { 
+          randVisit = Math.round(Math.random() * (totalVisits-1));
+          return x(randVisit); 
+        })
+        // .attr("y", function (d) { return 0.5 * (y(d[0])+y(d[1])); });
+        .attr("y", function (d,i) { 
+          return  y(d[randVisit][0]); });
+
     
       svg.append("g")
           .attr("class", "x axis")
@@ -597,7 +613,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
 
 function drawStreamGraph(csvPath, divName, sgwidth, sgheight)
 {
-    streamChart(csvPath, 'gray', divName, sgwidth, sgheight);
+    streamChart(csvPath, 'pink', divName, sgwidth, sgheight);
 }
     
 function tcmVAmain()
@@ -610,11 +626,11 @@ function tcmVAmain()
             var sqwwdatum = {};
             sqwwdatum.V0 = +data[i].sqww1;
             sqwwdatum.V1 = +data[i].sqww2;
-            sqwwdatum.name = data[i].Name;
+            sqwwdatum.name = data[i].Name2;
             sqwwdatum.pinyin = data[i].Pinyin;
 
             var sympdatum = {}
-            sympdatum.name = data[i].Name;
+            sympdatum.name = data[i].Name2;
             sympdatum.pinyin = data[i].Pinyin;
             sympdatum.V0 = +data[i].symp1;
             sympdatum.V1 = +data[i].symp2;
