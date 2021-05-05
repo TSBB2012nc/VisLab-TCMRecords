@@ -402,6 +402,10 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
     else if (color == "orange") {
       colorrange = ["#B30000", "#E34A33", "#FC8D59", "#FDBB84", "#FDD49E", "#FEF0D9"];
     }
+    else if (color == "gray"){
+      colorrange = ["#252525", "#525252","#737373","#969696","#bdbdbd","#d9d9d9","#f0f0f0"];
+    }
+
     strokecolor = colorrange[0];
 
     // var format = d3.time.format("%m/%d/%y");
@@ -593,7 +597,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
 
 function drawStreamGraph(csvPath, divName, sgwidth, sgheight)
 {
-    streamChart(csvPath, 'pink', divName, sgwidth, sgheight);
+    streamChart(csvPath, 'gray', divName, sgwidth, sgheight);
 }
     
 function tcmVAmain()
