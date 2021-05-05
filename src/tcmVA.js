@@ -16,12 +16,15 @@ var gScatterSqww = [];
 // Streamgraph objects
 var gStreamRx = [];
 
-
-// We also keep the actual d3-brush functions and their IDs in a list:
+//User selection with burshing
 var brushes = [];
 var gPoints = [];
 var gSelectedPoints = [];
 var gNotSelectedPoints = [];
+// colors of streamgraph bands by user brushing
+var gStreamGraphLayers = [];
+var gDefaultStreamgraphColRange = [];
+var gStreamBandColors = [];
 
 // Lasso functions
 
@@ -169,22 +172,30 @@ function updateSelectedPoints(selectedPoints) {
         if(d.id == selectedPoints[i].id)
         {
           d.brushedId = gBrushes.length -1 ;
+          // Check if the medicine is in the streamgraph
+          for (var j = 0; j < gStreamGraphLayers.length; j++) {
+            if (d.name == gStreamGraphLayers[j].key){
+              gStreamBandColors.push({name: d.name, color: colorMap(d.brushedId)});
+              break;
+            }
+         }
+          break;
         }
       }
-
     });
     selectedPoints.forEach(d => {
       d.color = '#000';
       d.brushedId = gBrushes.length-1; // Set brushed Id
     });
+
   }
 
   // redraw with new colors
-    drawPoints();
+    redrawAll();
 }
 
 // helper to actually draw points on the canvas
-function drawPoints() 
+function redrawAll() 
 {
   // Need to update multiple linked views!!!
   // Symptoms view
@@ -228,7 +239,19 @@ function drawPoints()
          return "gray";
     })
     .attr("opacity", "1");
-}
+
+    // Stream graph
+    const context3 = d3.select("#streamGraph");
+    var bands = context3.selectAll(".layer");
+      bands.attr("class", "layer")
+      .style("fill", function(d, i) { 
+        for(var j = 0; j < gStreamBandColors.length; j++){
+          if(d.key == gStreamBandColors[j].name)
+            return gStreamBandColors[j].color;
+        }
+        return gDefaultStreamgraphColRange(i);
+       });
+  }
 
 // attach lasso to interaction SVG
 function lassoFunction(interactionSvg) 
@@ -364,7 +387,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
       colorrange = ["#B30000", "#E34A33", "#FC8D59", "#FDBB84", "#FDD49E", "#FEF0D9"];
     }
     strokecolor = colorrange[0];
-    
+
     // var format = d3.time.format("%m/%d/%y");
     // var format = d3.time.format("%Y/%m/%d");
     var format = d3.timeFormat("%M %d %Y");
@@ -391,6 +414,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
     
     var z = d3.scaleOrdinal()
         .range(colorrange);
+        gDefaultStreamgraphColRange = z;   
     
     var xAxis = d3.axisBottom(x)
         .ticks(20);
@@ -401,23 +425,6 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
     
     var yAxisr = d3.axisRight(y)
         .scale(y);
-    
-        // var stack = d3.layout.stack()
-        //     .offset("silhouette")
-        //     .values(function(d) { return d.values; })
-        //     .x(function(d) { return d.visit; })
-        //     .y(function(d) { return d.value; });
-    
-    // var stack = d3.stack()
-    //    .keys(function(d) { return d.keys; })
-    //     .offset(d3.stackOffsetSilhouette)
-    //     .value(function(d) { return d.values; });
-    
-    // // d3.stack()
-    //     // .offset("silhouette")
-    //     .values(function(d) { return d.values; })
-    //     .x(function(d) { return d.visit; })
-    //     .y(function(d) { return d.value; });
     
     var nest = d3.nest()
         .key(function(d) { return d.key; });
@@ -458,14 +465,15 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
         .offset(d3.stackOffsetSilhouette);
         // .value(function(d) { return d.values; })
      var layers = stackGen(data);
-    
+      gStreamGraphLayers = layers;
       // var layers = stack.keys(keys)(dataForStack);
     
+      // TODO: need to fix the y range
     //   x.domain(d3.extent(data, function(d) { return d.date; }));
       x.domain(d3.extent(data, function(d) { return d.visit; }));
       // y.domain([0, d3.max(data, function(d) { return d.y0 + d.y; })]);
       // y.domain([0, d3.extent(data, function(d) {return d[0] + d[1];})]);
-      y.domain([-100, 120]);
+      y.domain([-100, 120]); 
     
     //   svg.selectAll(".layer")
     //       .data(layers)
@@ -479,6 +487,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
         .enter().append("path")
           .attr("class", "layer")
           .attr("d", d3.area()
+          .curve(d3.curveBasis)
             .x(function(d, i) { return x(d.data.visit); })
             .y0(function(d) { return y(d[0]); })
             .y1(function(d) { return y(d[1]); })
@@ -566,7 +575,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
 
 function drawStreamGraph(csvPath, divName, sgwidth, sgheight)
 {
-    streamChart(csvPath, 'blue', divName, sgwidth, sgheight);
+    streamChart(csvPath, 'pink', divName, sgwidth, sgheight);
 }
     
 function tcmVAmain()
@@ -620,7 +629,7 @@ function tcmVAmain()
         canvas = d3.select("#scSymp");
         linkedView2 = d3.select("#scSqww");//.select("svg");
         lassoFunction(linkedView1);
-        drawPoints();
+        redrawAll();
          lassoFunctionInstance2(linkedView2);
         
 
