@@ -23,6 +23,7 @@ var gSelectedPoints = [];
 var gNotSelectedPoints = [];
 // colors of streamgraph bands by user brushing
 var gStreamGraphLayers = [];
+var gStreamGraphKeys = [];
 var gDefaultStreamgraphColRange = [];
 var gStreamBandColors = [];
 
@@ -197,6 +198,9 @@ function updateSelectedPoints(selectedPoints) {
 // helper to actually draw points on the canvas
 function redrawAll() 
 {
+
+  // Check what medicine are used in the streamgraph
+
   // Need to update multiple linked views!!!
   // Symptoms view
     const context1 = d3.select("#scSymp");
@@ -217,7 +221,13 @@ function redrawAll()
         else
          return "gray";
     })
-    .attr("opacity", "1");
+    .attr("opacity", function(d){
+      for(var i = 0; i < gStreamGraphKeys.length; i++){
+        if(d.name == gStreamGraphKeys[i])
+          return 1;
+      }
+      return 0.2;
+    });
 
     // Sqww View
     const context2 = d3.select("#scSqww");
@@ -238,7 +248,13 @@ function redrawAll()
         else
          return "gray";
     })
-    .attr("opacity", "1");
+    .attr("opacity", function(d){
+      for(var i = 0; i < gStreamGraphKeys.length; i++){
+        if(d.name == gStreamGraphKeys[i])
+          return 1;
+      }
+      return 0.2;
+    });
 
     // Stream graph
     const context3 = d3.select("#streamGraph");
@@ -335,8 +351,8 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight)
                 .attr("r", 5.5)
                 .attr("cx", function (d) { return x(d.V0); })
                 .attr("cy", function (d) { return y(d.V1); })
-                .style("fill", function (d) { return "gray"; })
-                .style("opacity", 0.5);
+                .style("fill", function (d) { return "black"; })
+                .attr("opacity", 0.5);
 
             node.append("text")
              .text(function(d) {return d.name;})
@@ -458,7 +474,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
     
       // List of groups = header of the csv files
       var keys = data.columns.slice(1);
-    
+      gStreamGraphKeys = keys;
       var stackGen = d3.stack()
        .keys(keys)
       //  .order(d3.stackOrderNone)
@@ -570,6 +586,8 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
              mousex = d3.mouse(this);
              mousex = mousex[0] + 5;
              vertical.style("left", mousex + "px")});
+
+      redrawAll();
     });
 }
 
@@ -629,8 +647,7 @@ function tcmVAmain()
         canvas = d3.select("#scSymp");
         linkedView2 = d3.select("#scSqww");//.select("svg");
         lassoFunction(linkedView1);
-        redrawAll();
-         lassoFunctionInstance2(linkedView2);
+        lassoFunctionInstance2(linkedView2);
         
 
     });
