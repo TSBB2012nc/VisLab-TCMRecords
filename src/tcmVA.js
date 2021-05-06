@@ -8,7 +8,7 @@ var gBrushes = [];
 var gSympData = [];
 var gSqwwData = [];
 var gRxTimeData = [];
-var margin = {left: 20, right: 20, top: 20, bottom: 20};
+var margin = {left: 20, right: 20, top: 40, bottom: 40};
 
 // Scatterplot objects
 var gScatterSymp = [];
@@ -219,7 +219,7 @@ function redrawAll()
         if(d.brushedId >= 0)
           return gBrushes[d.brushedId].color;
         else
-         return "gray";
+         return "#045A8D";
     })
     .attr("opacity", function(d){
       for(var i = 0; i < gStreamGraphKeys.length; i++){
@@ -246,7 +246,7 @@ function redrawAll()
         if(d.brushedId >= 0)
           return gBrushes[d.brushedId].color;
         else
-         return "gray";
+         return "#045A8D";
     })
     .attr("opacity", function(d){
       for(var i = 0; i < gStreamGraphKeys.length; i++){
@@ -351,7 +351,7 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight)
                 .attr("r", 5.5)
                 .attr("cx", function (d) { return x(d.V0); })
                 .attr("cy", function (d) { return y(d.V1); })
-                .style("fill", function (d) { return "black"; })
+                .style("fill", function (d) { return "blue"; })
                 .attr("opacity", 0.5);
 
             node.append("text")
@@ -361,20 +361,33 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight)
              .attr("y", function (d) { return y(d.V1) - 10; });
 
              
-    if(scSvgName == "scSymp") // just record once
-    gPoints = data.map(function(d,i){
-        var obj={};
-        // obj.x = x(d.symp1);
-        // obj.y = y(d.symp2);
-        obj.x = x(d.V0);
-        obj.y = y(d.V1);
-        obj.r = 5;
-        obj.id = i;
-        obj.pinyin = d.Pinyin;
-        obj.name = d.Name;
-        obj.brushedId = -1; // not selected by any brush
-        return obj;
+  if (scSvgName == "scSymp") // just record once
+    gPoints = data.map(function (d, i) {
+      var obj = {};
+      // obj.x = x(d.symp1);
+      // obj.y = y(d.symp2);
+      obj.x = x(d.V0);
+      obj.y = y(d.V1);
+      obj.r = 5;
+      obj.id = i;
+      obj.pinyin = d.Pinyin;
+      obj.name = d.Name;
+      obj.brushedId = -1; // not selected by any brush
+      return obj;
     });
+
+    scSvg.append("text")
+    .attr("x", (scwidth / 2))             
+    .attr("y", 0 - (margin.top / 2))
+    .attr("text-anchor", "middle")  
+    .style("font-size", "24px") 
+    .text(function(d){
+      if(scSvgName == "scSymp")
+      return "症状";
+      else
+      return "四气五味-归经";
+    });
+
 
     var scatterplot = {};
     scatterplot.svg = scSvg;
@@ -394,7 +407,8 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
     var keys = [];
     
     if (color == "blue") {
-      colorrange = ["#045A8D", "#2B8CBE", "#74A9CF", "#A6BDDB", "#D0D1E6", "#F1EEF6"];
+      // colorrange = ["#045A8D", "#2B8CBE", "#74A9CF", "#A6BDDB", "#D0D1E6", "#F1EEF6"];
+      colorrange = ["#A6BDDB", "#D0D1E6", "#F1EEF6"];
     }
     else if (color == "pink") {
       colorrange = ["#980043", "#DD1C77", "#DF65B0", "#C994C7", "#D4B9DA", "#F1EEF6"];
@@ -520,19 +534,20 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
           .style("fill", function(d, i) { return z(i); });
         ;
       
-        var randVisit = 0;
+        var randX= 0;
         var textnode = svg.selectAll("text").data(layers)
         .enter()
         .append("text")
         .text(function(d) {return d.key;})
         .style("font-size", "12px")
         .attr("x", function (d) { 
-          randVisit = (Math.random() * (totalVisits-1));
-          return x(randVisit); 
+          randX = Math.random() * (width-20);//(totalVisits-1));
+          return randX; //x(randVisit); 
         })
         // .attr("y", function (d) { return 0.5 * (y(d[0])+y(d[1])); });
         .attr("y", function (d,i) { 
-          return  y(d[Math.round(randVisit)][0]) + Math.random() *20; });
+          var rvisit = randX / (width-1) * totalVisits;
+          return  0.5*( y(d[Math.round(rvisit)][0]) + y(d[Math.round(rvisit)][1])) ; });
 
     
       svg.append("g")
@@ -617,7 +632,59 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
 
 function drawStreamGraph(csvPath, divName, sgwidth, sgheight)
 {
-    streamChart(csvPath, 'gray', divName, sgwidth, sgheight);
+    streamChart(csvPath, 'blue', divName, sgwidth, sgheight);
+}
+
+function drawTable()
+{
+  d3.csv("datafortable.csv", function(error, data) {
+    if (error) throw error;
+    
+    var sortAscending = true;
+    var table = d3.select('#page-wrap').append('table');
+
+
+    var dimensions={};
+    dimensions.width = 500;
+    dimensions.height = 800;
+    var width = dimensions.width + "px";
+    var height = dimensions.height + "px";
+    var twidth = (dimensions.width - 25) + "px";
+    var divHeight = (dimensions.height - 60) + "px";
+    var inner = table.append("tr").append("td")
+		.append("div").attr("class", "scroll").attr("width", width).attr("style", "height:" + divHeight + ";")
+		.append("table").attr("class", "bodyTable").attr("border", 1).attr("width", twidth).attr("height", height).attr("style", "table-layout:fixed");
+  
+    var titles = d3.keys(data[0]);
+    var headers = inner.append('thead').append('tr')
+                     .selectAll('th')
+                     .data(titles).enter()
+                     .append('th')
+                     .text(function (d) {
+                        return d;
+                      });
+
+                       
+
+    
+    // var rows = table.append('tbody').selectAll('tr')
+    var rows = inner.append('tbody').selectAll('tr')
+                 .data(data).enter()
+                 .append('tr');
+    rows.selectAll('td')
+      .data(function (d) {
+        return titles.map(function (k) {
+          return { 'value': d[k], 'name': k};
+        });
+      }).enter()
+      .append('td')
+      .attr('data-th', function (d) {
+        return d.name;
+      })
+      .text(function (d) {
+        return d.value;
+      });
+  });
 }
     
 function tcmVAmain()
@@ -647,6 +714,7 @@ function tcmVAmain()
 
         
         gScatterSymp = drawSConDiv(gSympData, "scSymp", "#exampleSC", g_scwidth, g_scheight);
+        // Add title to the svg
         gScatterSqww = drawSConDiv(gSqwwData, "scSqww", "#exampleSC", g_scwidth, g_scheight);
 
         gPoints = data.map(function(d,i){
@@ -679,5 +747,6 @@ function tcmVAmain()
     });
     // 2. Prepare the stream graph
     drawStreamGraph("medByVisit.csv", "#streamGraph", g_sgwidth, g_sgheight);
-
+   // 3. draw a table
+   drawTable();
 }
