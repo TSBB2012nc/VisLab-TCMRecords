@@ -403,7 +403,8 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
       colorrange = ["#B30000", "#E34A33", "#FC8D59", "#FDBB84", "#FDD49E", "#FEF0D9"];
     }
     else if (color == "gray"){
-      colorrange = ["#252525", "#525252","#737373","#969696","#bdbdbd","#d9d9d9","#f0f0f0"];
+      // colorrange = ["#252525", "#525252","#737373","#969696","#bdbdbd","#d9d9d9","#f0f0f0"];
+      colorrange = ["#bdbdbd","#d9d9d9","#f0f0f0"];
     }
 
     strokecolor = colorrange[0];
@@ -441,10 +442,10 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
         // .ticks(function(d){return d.visit;});
     
     var yAxis = d3.axisLeft(y)
-        .scale(y);
+        .scale(y).ticks(0);
     
     var yAxisr = d3.axisRight(y)
-        .scale(y);
+        .scale(y).ticks(0);
     
     var nest = d3.nest()
         .key(function(d) { return d.key; });
@@ -506,7 +507,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
     
       var layernode=  svg.selectAll(".layer")
           .data(layers)
-        .enter().append("g");
+        .enter();
         
         layernode.append("path")
           .attr("class", "layer")
@@ -517,18 +518,21 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
             .y1(function(d) { return y(d[1]); })
           )
           .style("fill", function(d, i) { return z(i); });
+        ;
       
-          var randVisit = 0;
-        layernode.append("text")
+        var randVisit = 0;
+        var textnode = svg.selectAll("text").data(layers)
+        .enter()
+        .append("text")
         .text(function(d) {return d.key;})
         .style("font-size", "12px")
         .attr("x", function (d) { 
-          randVisit = Math.round(Math.random() * (totalVisits-1));
+          randVisit = (Math.random() * (totalVisits-1));
           return x(randVisit); 
         })
         // .attr("y", function (d) { return 0.5 * (y(d[0])+y(d[1])); });
         .attr("y", function (d,i) { 
-          return  y(d[randVisit][0]); });
+          return  y(d[Math.round(randVisit)][0]) + Math.random() *20; });
 
     
       svg.append("g")
@@ -613,7 +617,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
 
 function drawStreamGraph(csvPath, divName, sgwidth, sgheight)
 {
-    streamChart(csvPath, 'pink', divName, sgwidth, sgheight);
+    streamChart(csvPath, 'gray', divName, sgwidth, sgheight);
 }
     
 function tcmVAmain()
@@ -630,7 +634,9 @@ function tcmVAmain()
             sqwwdatum.pinyin = data[i].Pinyin;
 
             var sympdatum = {}
-            sympdatum.name = data[i].Name2;
+            if(data[i].Name == "")
+              continue;
+            sympdatum.name = data[i].Name;
             sympdatum.pinyin = data[i].Pinyin;
             sympdatum.V0 = +data[i].symp1;
             sympdatum.V1 = +data[i].symp2;
