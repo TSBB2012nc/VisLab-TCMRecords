@@ -27,6 +27,9 @@ var gStreamGraphKeys = [];
 var gDefaultStreamgraphColRange = [];
 var gStreamBandColors = [];
 
+// Patient data
+var gPatient = 1;
+var gRxFilenameList = ["medByVisitP1.csv","medByVisitP2.csv","medByVisitP3.csv"];
 // Lasso functions
 
 // create a container with position relative to handle our canvas layer
@@ -60,6 +63,49 @@ var linkedView3 = [];
 var linkedView4 = [];
 var linkedView5 = [];
 var colorMap = d3.scaleOrdinal(d3.schemeCategory10);
+
+ // Save data to CSV
+ function exportToCsv(filename, rows) {
+  var processRow = function (row) {
+    var finalVal = '';
+    for (var j = 0; j < row.length; j++) {
+      var innerValue = row[j] === null ? '' : row[j].toString();
+      if (row[j] instanceof Date) {
+        innerValue = row[j].toLocaleString();
+      };
+      var result = innerValue.replace(/"/g, '""');
+      if (result.search(/("|,|\n)/g) >= 0)
+        result = '"' + result + '"';
+      if (j > 0)
+        finalVal += ',';
+      finalVal += result;
+    }
+    return finalVal + '\n';
+  };
+
+  var csvFile = '';
+  for (var i = 0; i < rows.length; i++) {
+    csvFile += processRow(rows[i]);
+  }
+
+  var blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });
+  if (navigator.msSaveBlob) { // IE 10+
+    navigator.msSaveBlob(blob, filename);
+  } else {
+    var link = document.createElement("a");
+    if (link.download !== undefined) { // feature detection
+      // Browsers that support HTML5 download attribute
+      var url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
+}
+
 // when a lasso is completed, filter to the points within the lasso polygon
 function handleLassoEnd(lassoPolygon)
 {
@@ -510,7 +556,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
       x.domain(d3.extent(data, function(d) { return d.visit; }));
       // y.domain([0, d3.max(data, function(d) { return d.y0 + d.y; })]);
       // y.domain([0, d3.extent(data, function(d) {return d[0] + d[1];})]);
-      y.domain([-100, 120]); 
+      y.domain([-200, 200]); 
     
     //   svg.selectAll(".layer")
     //       .data(layers)
@@ -687,8 +733,143 @@ function drawTable()
   });
 }
     
+function convertPatientRxData(csvpath){
+  var graph = d3.csv(csvpath, function(data) {
+    var maxTimeSteps = -1;
+    var allDates=[];
+    var parseDate = d3.timeParse("%Y年%M月%Y日");
+    var nest = d3.nest()
+    .key(function(d) { return d.key; });
+    data.forEach(function(d,i) {
+      d.date = parseDate(d.date);
+      d.value = +d.value;
+      d.visit = +d.visit;
+    });
+    // 0. generate original nest data！
+    var dataByKey =nest.entries(data);
+    var dataByVisit = d3.nest()
+    .key(function (d) { return d.visit; })
+    .entries(data);
+
+  // 1. Fix data to have values of all keys at all time steps
+    var fulldataByKey = dataByKey;
+    var fixedData = [];
+    // Fill empty dates for each medicine
+    for(var i = 0; i < dataByKey.length; i++)
+    {
+      for(var k = 0; k < dataByVisit.length; k++) // all dates
+        {
+            var dateFound = false;
+          for(var j = 0; j < dataByKey[i].values.length; j++) // appearances of the medicine
+          {
+              if(dataByKey[i].values[j].visit==dataByVisit[k].key)
+              {
+                  fulldataByKey[i].values.push({key: dataByKey[i].key, value: dataByKey[i].values[j].value, visit:+dataByVisit[k].key, date: dataByKey[i].values[j].date});
+                  fixedData.push({key: dataByKey[i].key, value: dataByKey[i].values[j].value, visit: +dataByVisit[k].key, date: dataByKey[i].values[j].date});
+                  dateFound = true;
+                  break;
+              }
+          }
+  
+          if(!dateFound){
+              fulldataByKey[i].values.push({key: dataByKey[i].key, value: 0, visit: +dataByVisit[k].key, date: dataByVisit[k].values[0].date});
+              fixedData.push({key: dataByKey[i].key, value: 0, visit: +dataByVisit[k].key, date: dataByVisit[k].values[0].date});
+          }
+  
+        }
+      }
+  // 2. Regenerate nest data!
+   dataByKey = fulldataByKey;//nest.entries(data);
+   dataByVisit = d3.nest()
+  .key(function (d) { return d.visit; })
+  .entries(fixedData);
+  // 3. Transform data to a matrix (rows: date, columns: keys)
+  //Create empty data structures
+  var matrix0 = [];
+  for(var t = -1; t < dataByVisit.length; t++)
+  // for(var t = 0; t < dataByVisit.length; t++)
+  {
+    var vectorMed = [];
+    if(t==-1)
+       vectorMed.push("visit");
+    for(var m = -1; m < dataByKey.length; m++)
+    {
+  
+      if(t == -1)
+      {
+          if(m >=0)
+          vectorMed.push(dataByKey[m].key);
+      }
+      else
+      {
+        if(m==-1)
+          vectorMed.push(t);
+        else
+          vectorMed.push(dataByVisit[t].values[m].value);
+  
+      }
+    }
+    matrix0.push(vectorMed);
+  }
+  console.log(matrix0);
+  
+  exportToCsv("medByVisitP3.csv", matrix0);
+  // // d3.range(dataByVisit.length).map(function (d) { return { x:d }; });
+  // //var matrix1 = d3.range(dataByVisit.length).map(function (d) { return { x:d }; });
+  
+  // // // Fill them with random data
+  // // d3.range(n).map(function(d) { bumpLayer(m, matrix0, d); });
+  // // d3.range(n).map(function(d) { bumpLayer(m, matrix1, d); });
+  
+  //   console.log(dataByVisit);
+    // var fulldataByKey = dataByKey;
+    // var fixedData = [];
+    // // Fill empty dates for each medicine
+    // for(var i = 0; i < dataByKey.length; i++)
+    // {
+    //   for(var k = 0; k < dataByDate.length; k++) // all dates
+    //     {
+    //         var dateFound = false;
+    //       for(var j = 0; j < dataByKey[i].values.length; j++) // appearances of the medicine
+    //       {
+    //           if(dataByKey[i].values[j].date==dataByDate[k].key)
+    //           {
+    //               fulldataByKey[i].values.push({key: dataByKey[i].key, value: dataByKey[i].values[j].value, date: dataByDate[k].key});
+    //               fixedData.push({key: dataByKey[i].key, value: dataByKey[i].values[j].value, date: dataByDate[k].key});
+    //               dateFound = true;
+    //               break;
+    //           }
+    //       }
+  
+    //       if(!dateFound){
+    //           fulldataByKey[i].values.push({key: dataByKey[i].key, value: 0, date: dataByDate[k].key});
+    //           fixedData.push({key: dataByKey[i].key, value: 0, date: dataByDate[k].key});
+    //       }
+  
+    //     }
+  
+  
+    //  }
+    // console.log(fixedData);
+    // Write out fulldataByKey to csv
+    // var csvstring = d3.csv(
+    //     fixedData.map(function(d, i) {
+    // return [
+    //   d.key, // Assuming d.year is a Date object.
+    //   d.value,
+    //   d.date,
+    //   d.visit
+    // ];
+    //   }));
+    //   console.log(csvstring);
+  });
+}
+
+
 function tcmVAmain()
 {
+    // 0. convert medical record files when not been done.
+    // convertPatientRxData("medicalRecordsP3.csv");
     // 1.Prepare the scatterplots
     d3.csv("./newdata.csv", function(data){
 
@@ -745,8 +926,37 @@ function tcmVAmain()
         
 
     });
-    // 2. Prepare the stream graph
-    drawStreamGraph("medByVisit.csv", "#streamGraph", g_sgwidth, g_sgheight);
+    d3.select("#selectButton")
+    .selectAll('myOptions')
+     .data(gRxFilenameList)
+    .enter()
+    .append('option')
+    .text(function (d) { return d; }) // text showed in the menu
+    .attr("value", function (d) { return d; }) // corresponding value returned by the button
+
+  drawStreamGraph(gRxFilenameList[gPatient-1], "#streamGraph", g_sgwidth, g_sgheight);
+  // When the button is changed, run the updateChart function
+  d3.select("#selectButton").on("change", function (d) {
+    // recover the option that has been chosen
+    var selectedOption = d3.select(this).property("value")
+    // run the updateChart function with this selected option
+        // 2. Prepare the stream graph
+        // gPatient = 2;
+        var RxDataName = selectedOption;
+        if(RxDataName != gRxFilenameList[gPatient-1])
+        {
+                           // Clear stream graph
+            d3.select("#streamGraph").selectAll("svg").remove();
+            drawStreamGraph(RxDataName, "#streamGraph", g_sgwidth, g_sgheight);
+            for(var i = 0; i < gRxFilenameList.length; i++)
+            {
+              if(RxDataName == gRxFilenameList[i])
+                gPatient = i - 1;
+            }
+        }
+        // update(selectedOption)
+  })
+
    // 3. draw a table
    drawTable();
 }
