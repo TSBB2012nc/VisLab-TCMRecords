@@ -699,7 +699,7 @@ function tcmVAmain()
             sqwwdatum.V1 = +data[i].sqww2;
             sqwwdatum.name = data[i].Name2;
             sqwwdatum.pinyin = data[i].Pinyin;
-
+            gSqwwData.push(sqwwdatum);
             var sympdatum = {}
             if(data[i].Name == "")
               continue;
@@ -708,7 +708,7 @@ function tcmVAmain()
             sympdatum.V0 = +data[i].symp1;
             sympdatum.V1 = +data[i].symp2;
 
-            gSqwwData.push(sqwwdatum);
+
             gSympData.push(sympdatum);
         }
 
