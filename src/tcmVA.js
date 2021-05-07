@@ -378,39 +378,33 @@ function lassoFunctionInstance2(interactionSvg)
 }
 
 // Draw linecharts
-function drawLinecharts(csvName, divName, width, height)
+function drawLinecharts(csvName, divName, sgWidth, sgHeight)
 {
 
-  var margin = { top: 30, right: 40, bottom: 30, left: 50 },
-    width = 600 - margin.left - margin.right,
-    height = 270 - margin.top - margin.bottom;
 
+
+  var margin = {top: 20, right: 40, bottom: 30, left: 50};
   // var parseDate = d3.time.format("%d-%b-%y").parse;
   var parseDate = d3.timeParse("%d-%b-%y");
 
+  var width = sgWidth - margin.left - margin.right;
+  var height = sgHeight - margin.top - margin.bottom;
   var x = d3.scaleTime().range([0, width]);
   var y0 = d3.scaleLinear().range([height, 0]);
   var y1 = d3.scaleLinear().range([height, 0]);
 
-  var xAxis = d3.axisBottom(x).ticks(5);
+  var xAxis = d3.axisBottom(x).ticks(20);
 
   var yAxisLeft = d3.axisLeft(y0).ticks(5);
 
   var yAxisRight = d3.axisRight(y1).ticks(5);
 
-  var valueline = d3.line()
-    .x(function (d) { return x(d.date); })
-    .y(function (d) { return y0(d.xdb); });
-
-  var valueline2 = d3.line()
-    .x(function (d) { return x(d.date); })
-    .y(function (d) { return y1(d.xjg); });
 
   var svg = d3.select(divName)
     .append("svg")
     .attr('class', "linechart")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
+    .attr("width",  width + margin.left + margin.right+ g_sgLegendWidth)
+    .attr("height", height + margin.bottom+margin.top)
     .append("g")
     .attr("transform",
       "translate(" + margin.left + "," + margin.top + ")");
@@ -419,44 +413,75 @@ function drawLinecharts(csvName, divName, width, height)
   d3.csv(csvName, function (error, data) {
     data.forEach(function (d) {
       d.date = parseDate(d.date);
-      d.xdb = +d.xdb;
-      d.xjg = +d.xjg;
+      d.v0 = +d.v0;
+      d.v1 = +d.v1;
     });
+
+    
+  var valueline = d3.line()
+  .x(function (d) { return x(d.date); })
+  .y(function (d) { return y0(d.v0); });
+
+var valueline2 = d3.line()
+  .x(function (d) { return x(d.date); })
+  .y(function (d) { return y1(d.v1); });
 
     // Scale the range of the data
     x.domain(d3.extent(data, function (d) { return d.date; }));
     y0.domain([0, d3.max(data, function (d) {
-      return Math.max(d.xdb);
+      return Math.max(d.v0);
     })]);
     y1.domain([0, d3.max(data, function (d) {
-      return Math.max(d.xjg);
+      return Math.max(d.v1);
     })]);
 
     svg.append("path")        // Add the valueline path.
       .attr("d", valueline(data))
-      .attr("stroke", "black")
-      .style("stroke-width", 4)
+      .attr("stroke", "steelblue")
+      .style("stroke-width", 2)
       .style("fill", "none");
 
     svg.append("path")        // Add the valueline2 path.
       .style("stroke", "red")
+      .style("stroke-width", 2)
       .attr("d", valueline2(data))
       .style("fill","none");
+
+    var circleNode = svg.selectAll("line-circle")
+        .data(data)
+        .enter();
+      
+        circleNode.append("circle")
+          .attr("class","data-circle")
+          .attr("r",5)
+          .style("fill", "steelblue")
+          .attr("cx", function(d){return x(d.date);})
+          .attr("cy", function(d){return y0(d.v0);});
+
+        circleNode.append("circle")
+          .attr("class","data-circle")
+          .attr("r",5)
+          .style("fill", "red")
+          .attr("cx", function(d){return x(d.date);})
+          .attr("cy", function(d){return y1(d.v1);})
 
     svg.append("g")            // Add the X Axis
       .attr("class", "x axis")
       .attr("transform", "translate(0," + height + ")")
+      .style("fill","none")
       .call(xAxis);
 
     svg.append("g")
       .attr("class", "y axis")
-      .style("fill", "steelblue")
+      .style("stroke", "steelblue")
+      .style("fill","none")
       .call(yAxisLeft);
 
     svg.append("g")
       .attr("class", "y axis")
       .attr("transform", "translate(" + width + " ,0)")
-      .style("fill", "red")
+      .style("fill","none")
+      .style("stroke", "red")
       .call(yAxisRight);
 
   });
@@ -600,7 +625,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
     var format = d3.timeFormat("%M %d %Y");
     var parseDate = d3.timeParse("%M %d %Y");
     
-    var margin = {top: 20, right: 40, bottom: 30, left: 30};
+    var margin = {top: 20, right: 40, bottom: 30, left: 50};
     var width = sgWidth - margin.left - margin.right;
     var height = sgHeight - margin.top - margin.bottom;
     
@@ -1071,7 +1096,7 @@ function tcmVAmain()
   // draw streamgraph with the patient
   drawStreamGraph(gRxFilenameList[gPatient - 1], "#streamGraph", g_sgwidth, g_sgheight);
   // draw a line chart
-  drawLinecharts(gTestFilenameList[2], "#lineCharts", g_sgwidth, g_sgheight);
+  drawLinecharts(gTestFilenameList[gPatient-1], "#lineCharts", g_sgwidth, 150);
 
   // When the button is changed, run the updateChart function
   d3.select("#selectButton").on("change", function (d) {
@@ -1085,10 +1110,19 @@ function tcmVAmain()
       // Clear stream graph
       d3.select("#streamGraph").selectAll("svg").remove();
       drawStreamGraph(RxDataName, "#streamGraph", g_sgwidth, g_sgheight);
+   
       for (var i = 0; i < gRxFilenameList.length; i++) {
-        if (RxDataName == gRxFilenameList[i])
-          gPatient = i - 1;
+        if (RxDataName === gRxFilenameList[i])
+        {
+          gPatient = i + 1 ;
+          break;
+
+        }
       }
+       // Clear line charts
+       d3.select("#lineCharts").selectAll("svg").remove();
+      // draw a line chart
+      drawLinecharts(gTestFilenameList[gPatient-1], "#lineCharts", g_sgwidth, 150);
     }
     // update(selectedOption)
   })
