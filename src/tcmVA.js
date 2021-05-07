@@ -31,7 +31,7 @@ var gStreamBandColors = [];
 // Patient data
 var gPatient = 1;
 var gRxFilenameList = ["medByVisitP1.csv","medByVisitP2.csv","medByVisitP3.csv"];
-
+var gTestFilenameList = ["bingren1.csv","bingren2.csv","bingren3.csv"];
 // Medicine attributes
 var gMedProperties = [];
 var gDefaultMedClass = [];
@@ -376,6 +376,92 @@ function lassoFunctionInstance2(interactionSvg)
 
     return lassoInstance;
 }
+
+// Draw linecharts
+function drawLinecharts(csvName, divName, width, height)
+{
+
+  var margin = { top: 30, right: 40, bottom: 30, left: 50 },
+    width = 600 - margin.left - margin.right,
+    height = 270 - margin.top - margin.bottom;
+
+  // var parseDate = d3.time.format("%d-%b-%y").parse;
+  var parseDate = d3.timeParse("%d-%b-%y");
+
+  var x = d3.scaleTime().range([0, width]);
+  var y0 = d3.scaleLinear().range([height, 0]);
+  var y1 = d3.scaleLinear().range([height, 0]);
+
+  var xAxis = d3.axisBottom(x).ticks(5);
+
+  var yAxisLeft = d3.axisLeft(y0).ticks(5);
+
+  var yAxisRight = d3.axisRight(y1).ticks(5);
+
+  var valueline = d3.line()
+    .x(function (d) { return x(d.date); })
+    .y(function (d) { return y0(d.xdb); });
+
+  var valueline2 = d3.line()
+    .x(function (d) { return x(d.date); })
+    .y(function (d) { return y1(d.xjg); });
+
+  var svg = d3.select(divName)
+    .append("svg")
+    .attr('class', "linechart")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform",
+      "translate(" + margin.left + "," + margin.top + ")");
+
+  // Get the data
+  d3.csv(csvName, function (error, data) {
+    data.forEach(function (d) {
+      d.date = parseDate(d.date);
+      d.xdb = +d.xdb;
+      d.xjg = +d.xjg;
+    });
+
+    // Scale the range of the data
+    x.domain(d3.extent(data, function (d) { return d.date; }));
+    y0.domain([0, d3.max(data, function (d) {
+      return Math.max(d.xdb);
+    })]);
+    y1.domain([0, d3.max(data, function (d) {
+      return Math.max(d.xjg);
+    })]);
+
+    svg.append("path")        // Add the valueline path.
+      .attr("d", valueline(data))
+      .attr("stroke", "black")
+      .style("stroke-width", 4)
+      .style("fill", "none");
+
+    svg.append("path")        // Add the valueline2 path.
+      .style("stroke", "red")
+      .attr("d", valueline2(data))
+      .style("fill","none");
+
+    svg.append("g")            // Add the X Axis
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+    svg.append("g")
+      .attr("class", "y axis")
+      .style("fill", "steelblue")
+      .call(yAxisLeft);
+
+    svg.append("g")
+      .attr("class", "y axis")
+      .attr("transform", "translate(" + width + " ,0)")
+      .style("fill", "red")
+      .call(yAxisRight);
+
+  });
+}
+
 // Draw scatterplots
 function drawSConDiv(data, scSvgName, divName, scwidth, scheight) 
 {
@@ -912,58 +998,54 @@ function convertPatientRxData(csvpath){
 
 function tcmVAmain()
 {
-    // 0. convert medical record files when not been done.
-    // convertPatientRxData("medicalRecordsP3.csv");
+  // 0. convert medical record files when not been done.
+  // convertPatientRxData("medicalRecordsP3.csv");
 
-    // ## Load medicine properties and draw a table
-    drawTable();
-    // If we have a classificiation of medicine
-    if(gDefaultMedMajorClass.length>0)
-    {
-      gDefaultStreamgraphColRange = d3.scaleOrdinal(d3.schemeCategory10 );
-    }
+  // ## Load medicine properties and draw a table
+  drawTable();
+  // If we have a classificiation of medicine
+  if (gDefaultMedMajorClass.length > 0) {
+    gDefaultStreamgraphColRange = d3.scaleOrdinal(d3.schemeCategory10);
+  }
 
   // 1.Prepare the scatterplots
-  d3.csv("./newdata.csv", function(data){
-    for(var i = 0; i < data.length; i++)
-    {
-        var sqwwdatum = {};
-        sqwwdatum.V0 = +data[i].sqww1;
-        sqwwdatum.V1 = +data[i].sqww2;
-        sqwwdatum.name = data[i].Name2;
-        sqwwdatum.pinyin = data[i].Pinyin;
-        gSqwwData.push(sqwwdatum);
-        var sympdatum = {}
-        if(data[i].Name == "")
-          continue;
-        sympdatum.name = data[i].Name;
-        sympdatum.pinyin = data[i].Pinyin;
-        sympdatum.V0 = +data[i].symp1;
-        sympdatum.V1 = +data[i].symp2;
+  d3.csv("./newdata.csv", function (data) {
+    for (var i = 0; i < data.length; i++) {
+      var sqwwdatum = {};
+      sqwwdatum.V0 = +data[i].sqww1;
+      sqwwdatum.V1 = +data[i].sqww2;
+      sqwwdatum.name = data[i].Name2;
+      sqwwdatum.pinyin = data[i].Pinyin;
+      gSqwwData.push(sqwwdatum);
+      var sympdatum = {}
+      if (data[i].Name == "")
+        continue;
+      sympdatum.name = data[i].Name;
+      sympdatum.pinyin = data[i].Pinyin;
+      sympdatum.V0 = +data[i].symp1;
+      sympdatum.V1 = +data[i].symp2;
 
 
-        gSympData.push(sympdatum);
+      gSympData.push(sympdatum);
     }
-
-    
     gScatterSymp = drawSConDiv(gSympData, "scSymp", "#exampleSC", g_scwidth, g_scheight);
     // Add title to the svg
     gScatterSqww = drawSConDiv(gSqwwData, "scSqww", "#exampleSC", g_scwidth, g_scheight);
 
-    gPoints = data.map(function(d,i){
-        var obj={};
-        // obj.x = x(d.symp1);
-        // obj.y = y(d.symp2);
-        obj.x = gScatterSymp.xXform(+d.symp1);
-        obj.y = gScatterSymp.yXform(+d.symp2);
-        obj.x2 = gScatterSqww.xXform(+d.sqww1);
-        obj.y2 = gScatterSqww.yXform(+d.sqww2);
-        obj.r = 5;
-        obj.id = i;
-        obj.pinyin = d.Pinyin;
-        obj.name = d.Name;
-        obj.brushedId = -1; // not selected by any brush
-        return obj;
+    gPoints = data.map(function (d, i) {
+      var obj = {};
+      // obj.x = x(d.symp1);
+      // obj.y = y(d.symp2);
+      obj.x = gScatterSymp.xXform(+d.symp1);
+      obj.y = gScatterSymp.yXform(+d.symp2);
+      obj.x2 = gScatterSqww.xXform(+d.sqww1);
+      obj.y2 = gScatterSqww.yXform(+d.sqww2);
+      obj.r = 5;
+      obj.id = i;
+      obj.pinyin = d.Pinyin;
+      obj.name = d.Name;
+      obj.brushedId = -1; // not selected by any brush
+      return obj;
     });
 
     // 3. Initialize brushes 
@@ -974,8 +1056,8 @@ function tcmVAmain()
     canvas = d3.select("#scSymp");
     linkedView2 = d3.select("#scSqww");//.select("svg");
     lassoFunction(linkedView1);
-    lassoFunctionInstance2(linkedView2);        
-});
+    lassoFunctionInstance2(linkedView2);
+  });
 
   // initialize a selection button
   d3.select("#selectButton")
@@ -988,6 +1070,9 @@ function tcmVAmain()
 
   // draw streamgraph with the patient
   drawStreamGraph(gRxFilenameList[gPatient - 1], "#streamGraph", g_sgwidth, g_sgheight);
+  // draw a line chart
+  drawLinecharts(gTestFilenameList[2], "#lineCharts", g_sgwidth, g_sgheight);
+
   // When the button is changed, run the updateChart function
   d3.select("#selectButton").on("change", function (d) {
     // recover the option that has been chosen
@@ -1007,12 +1092,6 @@ function tcmVAmain()
     }
     // update(selectedOption)
   })
-
-
-  
-
-
-
 
 
 }
