@@ -35,6 +35,7 @@ var gTestFilenameList = ["bingren1.csv","bingren2.csv","bingren3.csv"];
 // Medicine attributes
 var gMedProperties = [];
 var gDefaultMedClass = [];
+var gExpertMedClass = [];
 var gDefaultMedMajorClass = ["利水渗湿药","化湿药","收敛药","泻下药","止血药","消食药","活血祛瘀药","清热类","理气药","补虚药","解表药"];
 // Lasso functions
 // create a container with position relative to handle our canvas layer
@@ -141,6 +142,38 @@ function defaultColoring(d)
   else
     return "blue"; 
 }
+
+function expColoring(d)
+{
+  if(gExpertMedClass.length > 0 )
+  {
+      // Default classification by medicine classification
+      var medClass = -1;
+      for(var ii = 0; ii < gMedProperties.length; ii++)
+      {
+        if(d.name == gMedProperties[ii].name)
+        {
+          // Search the name of medicine classification in the major classification list
+          for(var j = 0; j < gExpertMedClass.length; j++){
+            if(gMedProperties[ii].classExp.search(gExpertMedClass[j]) >= 0){
+              medClass = j;//gExpertMedClass.length - j -1;
+              break;
+            }
+          }
+        }
+        
+        if(medClass >= 0)
+          break;
+      }  
+      if(medClass < 0 )
+        return "blue";
+      else
+        return gDefaultStreamgraphColRange(medClass); 
+  }
+  else
+    return "blue"; 
+}
+
 
 // when a lasso is completed, filter to the points within the lasso polygon
 function handleLassoEnd(lassoPolygon)
@@ -292,9 +325,9 @@ function redrawAll()
             // check if the point is selected by SelectedPoints
           for (var i = 0; i < gSelectedPoints.length; i++) {
             if(gSelectedPoints[i].id == d.id)
-              return 8;
+              return 18;
           }
-          return 5.5;
+          return 15.5;
         })
     .style("fill", function(d){
         // Check all brushed groups
@@ -308,7 +341,17 @@ function redrawAll()
         if(d.name == gStreamGraphKeys[i])
           return 1;
       }
-      return 0.2;
+      return 0.05;
+    });
+
+    var allRectsSymp = context1.selectAll(".square");
+    allRectsSymp.data(gPoints)
+    .attr("opacity", function(d){
+      for(var i = 0; i < gStreamGraphKeys.length; i++){
+        if(d.name == gStreamGraphKeys[i])
+          return 1;
+      }
+      return 0.05;
     });
 
     // Sqww View
@@ -319,9 +362,9 @@ function redrawAll()
             // check if the point is selected by SelectedPoints
           for (var i = 0; i < gSelectedPoints.length; i++) {
             if(gSelectedPoints[i].id == d.id)
-              return 8;
+              return 18;
           }
-          return 5.5;
+          return 15.5;
         })
     .style("fill", function(d){
         // Check all brushed groups
@@ -336,7 +379,17 @@ function redrawAll()
         if(d.name == gStreamGraphKeys[i])
           return 1;
       }
-      return 0.2;
+      return 0.05;
+    });
+
+    var allRectsSqww = context2.selectAll(".square");
+    allRectsSqww.data(gPoints)
+    .attr("opacity", function(d){
+      for(var i = 0; i < gStreamGraphKeys.length; i++){
+        if(d.name == gStreamGraphKeys[i])
+          return 1;
+      }
+      return 0.05;
     });
 
     // Stream graph
@@ -543,13 +596,40 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight)
 
             node.append("circle")
                 .attr("class", "dot")
-                .attr("r", 5.5)
+                .attr("r", 15.5)
                 .attr("cx", function (d) { return x(d.V0); })
                 .attr("cy", function (d) { return y(d.V1); })
                 .style("fill", function (d) { 
                   return defaultColoring(d);
                 })
-                .attr("opacity", 0.5);
+                .attr("opacity", 0.1);
+            var ww = 14;
+
+            // // With concentric circles
+            // node.append("circle")
+            // // node.append("rect")
+            //     .attr("class","square")
+            //     // .attr("width",ww)
+            //     // .attr("height",ww)
+            //     // .attr("x",function(d){return x(d.V0)- ww/2;})
+            //     // .attr("y",function(d){return y(d.V1)-ww/2;})
+            //     .attr("r",10)
+            //     .attr("cx", function (d) { return x(d.V0); })
+            //     .attr("cy", function (d) { return y(d.V1); })
+            //     .style("fill", function(d){
+            //       return expColoring(d);
+            //     })
+
+            // With inner rectangle
+                node.append("rect")
+                    .attr("class","square")
+                    .attr("width",ww)
+                    .attr("height",ww)
+                    .attr("x",function(d){return x(d.V0)- ww/2;})
+                    .attr("y",function(d){return y(d.V1)-ww/2;})
+                    .style("fill", function(d){
+                      return expColoring(d);
+                    })
 
             node.append("text")
              .text(function(d) {return d.name;})
@@ -878,7 +958,8 @@ function drawStreamGraph(csvPath, divName, sgwidth, sgheight)
 
 function drawTable()
 {
-  d3.csv("datafortable.csv", function(error, data) {
+  var tableFname = "Result-MedicalTable.csv";
+  d3.csv(tableFname, function(error, data) {
     if (error) throw error;
     
     var sortAscending = true;
@@ -902,9 +983,21 @@ function drawTable()
     .key(function(d){return d.class})
     .entries(data);
 
+    var dataByExpCategory = d3.nest()
+    .key(function(d){return d.classExp;})
+    .entries(data);
+
     for(var k = 0; k < dataByCategory.length; k++){
       gDefaultMedClass.push(dataByCategory[k].key);
     }
+
+    for(var k = 0; k < dataByExpCategory.length; k++){
+      gExpertMedClass.push(dataByExpCategory[k].key);
+    }
+
+    if(gDefaultMedClass.length < 15)
+      gDefaultMedMajorClass = gDefaultMedClass;
+
     
     var headers = inner.append('thead').append('tr')
                      .selectAll('th')
