@@ -30,7 +30,7 @@ var gStreamBandColors = [];
 
 // Patient data
 var gPatient = 1;
-var gRxFilenameList = ["medByVisitP1.csv","medByVisitP2.csv","medByVisitP3.csv"];
+var gRxFilenameList = ["medByVisitP1fixed.csv","medByVisitP2fixed.csv","medByVisitP3fixed.csv"];
 var gTestFilenameList = ["bingren1.csv","bingren2.csv","bingren3.csv"];
 // Medicine attributes
 var gMedProperties = [];
