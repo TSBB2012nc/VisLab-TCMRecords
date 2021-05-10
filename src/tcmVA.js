@@ -68,8 +68,7 @@ var linkedView2 = [];
 var linkedView3 = [];
 var linkedView4 = [];
 var linkedView5 = [];
-var colorMap = d3.scaleOrdinal(d3.schemeCategory10);
-
+var colorMap = d3.scaleOrdinal(d3.schemePaired);
  // Save data to CSV
  function exportToCsv(filename, rows) {
   var processRow = function (row) {
@@ -397,12 +396,31 @@ function redrawAll()
     var bands = context3.selectAll(".layer");
       bands.attr("class", "layer")
       .style("fill", function(d, i) { 
-        for(var j = 0; j < gStreamBandColors.length; j++){
-          if(d.key == gStreamBandColors[j].name)
-            return gStreamBandColors[j].color;
-        }
-        return gDefaultStreamgraphColRange(i);
-       });
+        // for(var j = 0; j < gStreamBandColors.length; j++){
+        //   if(d.key == gStreamBandColors[j].name)
+        //     return gStreamBandColors[j].color;
+        // }
+        // return gDefaultStreamgraphColRange(i);
+          var medClass = -1;
+          for(var ii = 0; ii < gMedProperties.length; ii++)
+          {
+            if(d.key == gMedProperties[ii].name)
+            {
+              // Search the name of medicine classification in the major classification list
+              for(var j = 0; j < gExpertMedClass.length; j++){
+                if(gMedProperties[ii].classExp.search(gExpertMedClass[j]) >= 0){
+                  medClass = j;
+                  break;
+                }
+              }
+            }
+            
+            if(medClass >= 0)
+              break;
+          }  
+            return gDefaultStreamgraphColRange(medClass); 
+          // expColoring(d);
+        });
   }
 
 // attach lasso to interaction SVG
@@ -537,26 +555,39 @@ var valueline2 = d3.line()
       .style("stroke", "red")
       .call(yAxisRight);
 
+      // svg.append("g").selectAll("expLabels")
+      // .data(gExpertMedClass)
+      // .enter()
+      // .append("text")
+      // .attr("x", width+12)
+      // .attr("y", function (d, i) { return  i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
+      // // .style("fill", function (d,i) { return gDefaultStreamgraphColRange(i); })
+      // .text(function (d) { return d })
+      // .attr("text-anchor", "left")
+      // .style("alignment-baseline", "middle")  
+  
+
   });
 }
 
 // Draw scatterplots
 function drawSConDiv(data, scSvgName, divName, scwidth, scheight) 
 {
+    var legendWidth = 40;
     var scSvg = d3.select(divName)
         .append("svg")
         .attr('class', scSvgName)
         .attr('id', scSvgName)
-        .attr("width", scwidth + margin.left + margin.right)
+        .attr("width", scwidth + margin.left + margin.right+legendWidth)
         .attr("height", scheight + margin.top + margin.bottom)
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
         var x = d3.scaleLinear()
-            .range([0, scwidth]);
+            .range([0, scwidth - legendWidth]);
 
         var y = d3.scaleLinear()
-            .range([scheight, 0]);
+            .range([scheight - legendWidth, 0]);
         var xAxis = d3.axisBottom(x)
             .ticks(0);
 
@@ -565,29 +596,30 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight)
 
         x.domain(d3.extent(data, function(d) { return d.V0; })).nice();
         y.domain(d3.extent(data, function(d) { return d.V1; })).nice();
-
     
-        scSvg.append("g")
-            .attr("class", "x axis")
-            .attr("transform", "translate(0," + scheight + ")")
-            .call(xAxis)
-            .append("text")
-            .attr("class", "label")
-            .attr("x", scwidth)
-            .attr("y", -6)
-            .style("text-anchor", "end")
-            .text("V0");
+        // scSvg.append("g")
+        //     .attr("class", "x axis")
+        //     .attr("transform", "translate(0," + scheight + ")")
+        //     .call(xAxis)
+        //     .append("text")
+        //     .attr("class", "label")
+        //     .attr("x", scwidth)
+        //     .attr("y", -6)
+        //     .style("text-anchor", "end")
+        //     .text("V0");
 
-        scSvg.append("g")
-            .attr("class", "y axis")
-            .call(yAxis)
-            .append("text")
-            .attr("class", "label")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 6)
-            .attr("dy", ".71em")
-            .style("text-anchor", "end")
-            .text("V1");
+        // scSvg.append("g")
+        //     .attr("class", "y axis")
+        //     .call(yAxis)
+        //     .append("text")
+        //     .attr("class", "label")
+        //     .attr("transform", "rotate(-90)")
+        //     .attr("y", 6)
+        //     .attr("dy", ".71em")
+        //     .style("text-anchor", "end")
+        //     .text("V1");
+
+
             
         var node =scSvg.selectAll(".dot")
             .data(data)
@@ -637,8 +669,10 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight)
              .attr("x", function (d) { return x(d.V0) - 30; })
              .attr("y", function (d) { return y(d.V1) - 10; });
 
+
              
-  if (scSvgName == "scSymp") // just record once
+  if (scSvgName == "scSymp") {
+    // just record once
     gPoints = data.map(function (d, i) {
       var obj = {};
       // obj.x = x(d.symp1);
@@ -653,17 +687,51 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight)
       return obj;
     });
 
-    scSvg.append("text")
-    .attr("x", (scwidth / 2))             
-    .attr("y", 0 - (margin.top / 2))
-    .attr("text-anchor", "middle")  
-    .style("font-size", "24px") 
-    .text(function(d){
-      if(scSvgName == "scSymp")
-      return "症状";
-      else
-      return "四气五味-归经";
-    });
+    // Draw legends
+    scSvg.append("g").selectAll("expLabelsRect")
+    .data(gExpertMedClass)
+    .enter()
+    .append("rect")
+    .attr("width",ww)
+    .attr("height",ww)
+    .attr("x",scwidth-15)
+    .attr("y",function (d, i) { return 20 + i * 25 - ww/2; }) 
+    .style("fill", function(d,i){
+      return gDefaultStreamgraphColRange(i);
+    })
+
+    scSvg.append("g").selectAll("expLabels")
+    .data(gExpertMedClass)
+    .enter()
+    .append("text")
+    .attr("x", scwidth)
+    .attr("y", function (d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
+    // .style("fill", function (d,i) { return gDefaultStreamgraphColRange(i); })
+    .text(function (d) { return d })
+    .attr("text-anchor", "left")
+    .style("alignment-baseline", "middle")  
+
+    scSvg.append("g").selectAll("defaultDots")
+    .data(gDefaultMedClass)
+    .enter()
+    .append("circle")
+    .attr("cx", scwidth-15)
+    .attr("cy", function (d, i) { return 320 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
+    .attr("r", 7)
+    .style("fill", function (d,i) { return gDefaultStreamgraphColRange(i); })
+
+    scSvg.append("g").selectAll("defaultLabels")
+    .data(gDefaultMedClass)
+    .enter()
+    .append("text")
+    .attr("x", scwidth)
+    .attr("y", function (d, i) { return 320 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
+    // .style("fill", function (d,i) { return gDefaultStreamgraphColRange(i); })
+    .text(function (d) { return d })
+    .attr("text-anchor", "left")
+    .style("alignment-baseline", "middle")  
+
+  } 
 
 
     var scatterplot = {};
@@ -768,6 +836,8 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
       var allDates=[];
       var totalVisits = 0;
       data.forEach(function(d,i) {
+        // we have to sort the datum by class here
+        
         d.date = parseDate(d.date);
         d.value = +d.value;
         d.visit = +d.visit;
@@ -777,11 +847,43 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
     
       // List of groups = header of the csv files
       var keys = data.columns.slice(1);
+      keys.sort(function(a,b){
+        a; b;
+        var i_a = -1;
+        var i_b = -1;
+        //a and b are medicine names
+        for(var i = 0; i < gMedProperties.length; i++)
+        {
+            if(a === gMedProperties[i].name)
+              i_a = i;
+            if(b === gMedProperties[i].name)
+              i_b = i;
+            if(i_a >= 0 && i_b >= 0)
+              break;
+        }
+        return i_a - i_b;});
+      console.log(keys);
+      // var dataByClass = data.map(function(d){
+      //   d.sort(function(a,b){
+      //     // get name of a and b
+      //     for(var k = 0; k < keys.length; k++)
+      //     {
+      //       if(a[keys[k]])
+      //     }
+ 
+      //   }
+      // });
+      var classKeys = gExpertMedClass;
+      // Group by classification
+      // keys = classKeys;
+
       gStreamGraphKeys = keys;
       var stackGen = d3.stack()
        .keys(keys)
-        .order(d3.stackOrderDescending)
-        .offset(d3.stackOffsetSilhouette);
+        .order(d3.stackOrderNone)
+        .offset(d3.stackOffsetSilhouette)
+        // .offset(d3.stackOffsetWiggle)
+        ;
         // .value(function(d) { return d.values; })
      var layers = stackGen(data);
       gStreamGraphLayers = layers;
@@ -820,8 +922,8 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
               if(d.key == gMedProperties[ii].name)
               {
                 // Search the name of medicine classification in the major classification list
-                for(var j = 0; j < gDefaultMedMajorClass.length; j++){
-                  if(gMedProperties[ii].class.search(gDefaultMedMajorClass[j]) >= 0){
+                for(var j = 0; j < gExpertMedClass.length; j++){
+                  if(gMedProperties[ii].classExp.search(gExpertMedClass[j]) >= 0){
                     medClass = j;
                     break;
                   }
@@ -831,7 +933,8 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
               if(medClass >= 0)
                 break;
             }  
-              return z(medClass); 
+              return gDefaultStreamgraphColRange(medClass); 
+            // expColoring(d);
           });
         ;
       
@@ -852,7 +955,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
 
 
       svg.append("g").selectAll("mydots")
-        .data(gDefaultMedMajorClass)
+        .data(gExpertMedClass)
         .enter()
         .append("circle")
         .attr("cx", width+margin.left+5)
@@ -861,16 +964,17 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
         .style("fill", function (d,i) { return gDefaultStreamgraphColRange(i); })
 
       svg.append("g").selectAll("mylabels")
-        .data(gDefaultMedMajorClass)
+        .data(gExpertMedClass)
         .enter()
         .append("text")
         .attr("x", width+margin.left+12)
         .attr("y", function (d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
-        .style("fill", function (d,i) { return gDefaultStreamgraphColRange(i); })
+        // .style("fill", function (d,i) { return gDefaultStreamgraphColRange(i); })
         .text(function (d) { return d })
         .attr("text-anchor", "left")
         .style("alignment-baseline", "middle")
-    
+
+ 
       svg.append("g")
           .attr("class", "x axis")
           .attr("transform", "translate(0," + height + ")")
@@ -979,6 +1083,7 @@ function drawTable()
   
     var titles = d3.keys(data[0]);
     gMedProperties = data;
+
     var dataByCategory = d3.nest()
     .key(function(d){return d.class})
     .entries(data);
@@ -998,6 +1103,9 @@ function drawTable()
     if(gDefaultMedClass.length < 15)
       gDefaultMedMajorClass = gDefaultMedClass;
 
+          //sort med property by class order
+    gMedProperties.sort(function(a,b){return d3.ascending(a.expClass, b.expClass);});
+    console.log(gMedProperties);
     
     var headers = inner.append('thead').append('tr')
                      .selectAll('th')
@@ -1123,7 +1231,7 @@ function tcmVAmain()
   drawTable();
   // If we have a classificiation of medicine
   if (gDefaultMedMajorClass.length > 0) {
-    gDefaultStreamgraphColRange = d3.scaleOrdinal(d3.schemeCategory10);
+    gDefaultStreamgraphColRange = d3.scaleOrdinal(d3.schemePaired);
   }
 
   // 1.Prepare the scatterplots
