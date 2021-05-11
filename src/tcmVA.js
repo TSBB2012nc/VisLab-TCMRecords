@@ -25,12 +25,15 @@ var gNotSelectedPoints = [];
 // colors of streamgraph bands by user brushing
 var gStreamGraphLayers = [];
 var gStreamGraphKeys = [];
+
 var gDefaultStreamgraphColRange = [];
 var gStreamBandColors = [];
 
 // Patient data
-var gPatient = 1;
+var gPatient = 0;
+var gPatientCompare = 0;
 var gRxFilenameList = ["medByVisitP1fixed.csv","medByVisitP2fixed.csv","medByVisitP3fixed.csv"];
+var gRxAllPatientsKeys = []; // record medicine used by each patient
 var gTestFilenameList = ["bingren1.csv","bingren2.csv","bingren3.csv"];
 // Medicine attributes
 var gMedProperties = [];
@@ -336,8 +339,12 @@ function redrawAll()
          return defaultColoring(d);//"#045A8D";
     })
     .attr("opacity", function(d){
-      for(var i = 0; i < gStreamGraphKeys.length; i++){
-        if(d.name == gStreamGraphKeys[i])
+      // for(var i = 0; i < gStreamGraphKeys.length; i++){
+      //   if(d.name == gStreamGraphKeys[i])
+      //     return 1;
+      // }
+      for(var i = 0; i < gRxAllPatientsKeys[gPatient].length; i++){
+        if(d.name == gRxAllPatientsKeys[gPatient][i])
           return 1;
       }
       return 0.05;
@@ -346,15 +353,15 @@ function redrawAll()
     var allRectsSymp = context1.selectAll(".square");
     allRectsSymp.data(gPoints)
     .attr("opacity", function(d){
-      for(var i = 0; i < gStreamGraphKeys.length; i++){
-        if(d.name == gStreamGraphKeys[i])
+      for(var i = 0; i < gRxAllPatientsKeys[gPatient].length; i++){
+        if(d.name == gRxAllPatientsKeys[gPatient][i])
           return 1;
       }
       return 0.05;
     });
 
-    // Sqww View
-    const context2 = d3.select("#scSqww");
+    // Compare View
+    const context2 = d3.select("#scCompare");
     var allDotsSqww = context2.selectAll(".dot");
     allDotsSqww.data(gPoints)
     .attr("r", function(d)    {
@@ -374,8 +381,8 @@ function redrawAll()
         //  return "#045A8D";
     })
     .attr("opacity", function(d){
-      for(var i = 0; i < gStreamGraphKeys.length; i++){
-        if(d.name == gStreamGraphKeys[i])
+      for(var i = 0; i < gRxAllPatientsKeys[gPatientCompare].length; i++){
+        if(d.name == gRxAllPatientsKeys[gPatientCompare][i])
           return 1;
       }
       return 0.05;
@@ -384,8 +391,8 @@ function redrawAll()
     var allRectsSqww = context2.selectAll(".square");
     allRectsSqww.data(gPoints)
     .attr("opacity", function(d){
-      for(var i = 0; i < gStreamGraphKeys.length; i++){
-        if(d.name == gStreamGraphKeys[i])
+      for(var i = 0; i < gRxAllPatientsKeys[gPatientCompare].length; i++){
+        if(d.name == gRxAllPatientsKeys[gPatientCompare][i])
           return 1;
       }
       return 0.05;
@@ -597,27 +604,27 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight)
         x.domain(d3.extent(data, function(d) { return d.V0; })).nice();
         y.domain(d3.extent(data, function(d) { return d.V1; })).nice();
     
-        // scSvg.append("g")
-        //     .attr("class", "x axis")
-        //     .attr("transform", "translate(0," + scheight + ")")
-        //     .call(xAxis)
-        //     .append("text")
-        //     .attr("class", "label")
-        //     .attr("x", scwidth)
-        //     .attr("y", -6)
-        //     .style("text-anchor", "end")
-        //     .text("V0");
+        scSvg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + scheight + ")")
+            .call(xAxis)
+            .append("text")
+            .attr("class", "label")
+            .attr("x", scwidth)
+            .attr("y", 0)
+            .style("text-anchor", "end")
+            .text("V0");
 
-        // scSvg.append("g")
-        //     .attr("class", "y axis")
-        //     .call(yAxis)
-        //     .append("text")
-        //     .attr("class", "label")
-        //     .attr("transform", "rotate(-90)")
-        //     .attr("y", 6)
-        //     .attr("dy", ".71em")
-        //     .style("text-anchor", "end")
-        //     .text("V1");
+        scSvg.append("g")
+            .attr("class", "y axis")
+            .call(yAxis)
+            .append("text")
+            .attr("class", "label")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0)
+            .attr("dy", ".71em")
+            .style("text-anchor", "end")
+            .text("V1");
 
 
             
@@ -862,7 +869,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
               break;
         }
         return i_a - i_b;});
-      console.log(keys);
+      // console.log(keys);
       // var dataByClass = data.map(function(d){
       //   d.sort(function(a,b){
       //     // get name of a and b
@@ -1221,6 +1228,50 @@ function convertPatientRxData(csvpath){
   });
 }
 
+function preprocessAllRx()
+{
+  
+  var parseDate = d3.timeParse("%M %d %Y");
+  for(var i = 0; i < gRxFilenameList.length; i++){
+    var csvpath = gRxFilenameList[i];
+    d3.csv(csvpath, function(data) {
+      var maxTimeSteps = -1;
+      var allDates=[];
+      var totalVisits = 0;
+      data.forEach(function(d,i) {
+        // we have to sort the datum by class here
+        
+        d.date = parseDate(d.date);
+        d.value = +d.value;
+        d.visit = +d.visit;
+        totalVisits = Math.max(d.visit, totalVisits);
+      });
+      // transform data to a matrix (rows: date, columns: keys)
+    
+      // List of groups = header of the csv files
+      var keys = data.columns.slice(1);
+      keys.sort(function(a,b){
+        a; b;
+        var i_a = -1;
+        var i_b = -1;
+        //a and b are medicine names
+        for(var i = 0; i < gMedProperties.length; i++)
+        {
+            if(a === gMedProperties[i].name)
+              i_a = i;
+            if(b === gMedProperties[i].name)
+              i_b = i;
+            if(i_a >= 0 && i_b >= 0)
+              break;
+        }
+        return i_a - i_b;});
+  
+      gRxAllPatientsKeys.push(keys) ;
+    });
+  }
+
+ 
+}
 
 function tcmVAmain()
 {
@@ -1256,7 +1307,7 @@ function tcmVAmain()
     }
     gScatterSymp = drawSConDiv(gSympData, "scSymp", "#exampleSC", g_scwidth, g_scheight);
     // Add title to the svg
-    gScatterSqww = drawSConDiv(gSqwwData, "scSqww", "#exampleSC", g_scwidth, g_scheight);
+    gScatterSqww = drawSConDiv(gSqwwData, "scCompare", "#exampleSC", g_scwidth, g_scheight);
 
     gPoints = data.map(function (d, i) {
       var obj = {};
@@ -1280,10 +1331,13 @@ function tcmVAmain()
     // 4. Setup lasso
     linkedView1 = d3.select("#scSymp");//.select("svg");
     canvas = d3.select("#scSymp");
-    linkedView2 = d3.select("#scSqww");//.select("svg");
+    linkedView2 = d3.select("#scCompare");//.select("svg");
     lassoFunction(linkedView1);
     lassoFunctionInstance2(linkedView2);
   });
+
+  // Record medicine in all Rx
+  preprocessAllRx();
 
   // initialize a selection button
   d3.select("#selectButton")
@@ -1294,10 +1348,30 @@ function tcmVAmain()
     .text(function (d) { return d; }) // text showed in the menu
     .attr("value", function (d) { return d; }) // corresponding value returned by the button
 
+    
+  // initialize a comparison select button
+  d3.select("#compareSelectButton")
+  .selectAll('compareOptions')
+  .data(gRxFilenameList)
+  .enter()
+  .append('option')
+  .text(function (d) { return d; }) // text showed in the menu
+  .attr("value", function (d) { return d; }) // corresponding value returned by the button
+
+  // mode selector
+  var scMode = ['四气五味','症状'];
+  d3.select("#compareModeSelectButton")
+  .selectAll('compareModeOptions')
+  .data(scMode)
+  .enter()
+  .append('option')
+  .text(function (d) { return d; }) // text showed in the menu
+  .attr("value", function (d) { return d; }) // corresponding value returned by the button
+
   // draw streamgraph with the patient
-  drawStreamGraph(gRxFilenameList[gPatient - 1], "#streamGraph", g_sgwidth, g_sgheight);
+  drawStreamGraph(gRxFilenameList[gPatient ], "#streamGraph", g_sgwidth, g_sgheight);
   // draw a line chart
-  drawLinecharts(gTestFilenameList[gPatient-1], "#lineCharts", g_sgwidth, 150);
+  drawLinecharts(gTestFilenameList[gPatient], "#lineCharts", g_sgwidth, 150);
 
   // When the button is changed, run the updateChart function
   d3.select("#selectButton").on("change", function (d) {
@@ -1307,7 +1381,7 @@ function tcmVAmain()
     // 2. Prepare the stream graph
     // gPatient = 2;
     var RxDataName = selectedOption;
-    if (RxDataName != gRxFilenameList[gPatient - 1]) {
+    if (RxDataName != gRxFilenameList[gPatient]) {
       // Clear stream graph
       d3.select("#streamGraph").selectAll("svg").remove();
       drawStreamGraph(RxDataName, "#streamGraph", g_sgwidth, g_sgheight);
@@ -1315,7 +1389,7 @@ function tcmVAmain()
       for (var i = 0; i < gRxFilenameList.length; i++) {
         if (RxDataName === gRxFilenameList[i])
         {
-          gPatient = i + 1 ;
+          gPatient = i;
           break;
 
         }
@@ -1323,10 +1397,55 @@ function tcmVAmain()
        // Clear line charts
        d3.select("#lineCharts").selectAll("svg").remove();
       // draw a line chart
-      drawLinecharts(gTestFilenameList[gPatient-1], "#lineCharts", g_sgwidth, 150);
+      drawLinecharts(gTestFilenameList[gPatient], "#lineCharts", g_sgwidth, 150);
     }
     // update(selectedOption)
   })
 
+  // X. Compare button changed
+  var selectedSCmodeVal = d3.select("#compareModeSelectButton").property("value");
+  var scData = [];
+  if (selectedSCmodeVal === "症状")
+    scData = gSympData;
+  else
+    scData = gSqwwData;
 
+  d3.select("#compareModeSelectButton").on("change", function (d) {
+    var selectedOption = d3.select(this).property("value")
+
+    if (selectedOption === "症状") {
+      scData = gSympData;
+    }
+    else
+      scData = gSqwwData;
+    // Clear scatterplot
+    d3.select("#scCompare").remove();
+    // draw scatter plots
+
+    drawSConDiv(scData, "scCompare", "#exampleSC", g_scwidth, g_scheight);
+    redrawAll();
+  });
+
+  // When the button is changed, run the updateChart function
+  d3.select("#compareSelectButton").on("change", function (d) {  
+    var selectedOption = d3.select(this).property("value")
+    var RxDataName = selectedOption;
+    if (RxDataName != gRxFilenameList[gPatientCompare]) {
+      // Clear stream graph   
+      for (var i = 0; i < gRxFilenameList.length; i++) {
+        if (RxDataName === gRxFilenameList[i])
+        {
+          gPatientCompare = i;
+          break;
+        }
+      }
+
+       // Clear scatterplot
+       d3.select("#scCompare").remove();
+      // draw scatter plots
+      drawSConDiv(scData, "scCompare", "#exampleSC", g_scwidth, g_scheight);
+      redrawAll();
+    }
+    // update(selectedOption)
+  })
 }
