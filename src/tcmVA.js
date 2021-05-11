@@ -1102,10 +1102,14 @@ function drawTable()
     for(var k = 0; k < dataByCategory.length; k++){
       gDefaultMedClass.push(dataByCategory[k].key);
     }
+    // sort by name
+    gDefaultMedClass.sort(function(a,b){return d3.ascending(a,b);});
 
     for(var k = 0; k < dataByExpCategory.length; k++){
-      gExpertMedClass.push(dataByExpCategory[k].key);
-    }
+      gExpertMedClass.push(dataByExpCategory[k].key);}
+    // sort by name
+    gExpertMedClass.sort(function(a,b){return d3.ascending(a,b);});
+    
 
     if(gDefaultMedClass.length < 15)
       gDefaultMedMajorClass = gDefaultMedClass;
