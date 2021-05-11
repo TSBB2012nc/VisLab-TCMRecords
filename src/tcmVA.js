@@ -25,11 +25,11 @@ var gNotSelectedPoints = [];
 // colors of streamgraph bands by user brushing
 var gStreamGraphLayers = [];
 var gStreamGraphKeys = [];
-
-var gDefaultStreamgraphColRange = [];
 var gStreamBandColors = [];
-
-// Patient data
+// Expert classified colors and default (text book) colors
+var gExpColRange = [];
+var gDefaultColRange = [];
+// Patients' data
 var gPatient = 0;
 var gPatientCompare = 0;
 var gRxFilenameList = ["medByVisitP1fixed.csv","medByVisitP2fixed.csv","medByVisitP3fixed.csv"];
@@ -40,31 +40,12 @@ var gMedProperties = [];
 var gDefaultMedClass = [];
 var gExpertMedClass = [];
 var gDefaultMedMajorClass = ["利水渗湿药","化湿药","收敛药","泻下药","止血药","消食药","活血祛瘀药","清热类","理气药","补虚药","解表药"];
+
 // Lasso functions
 // create a container with position relative to handle our canvas layer
 // and our SVG interaction layer
 var visRoot = [];
-// d3
-//     .select(document.body)
-//     .append('div')
-//     .attr('class', 'vis-root')
-//     .style('position', 'relative');
-// main canvas to draw on
 var canvas = [];
-//  visRoot
-//     .append('canvas')
-//     .attr('width', width * screenScale)
-//     .attr('height', height * screenScale)
-//     .style('width', `${width}px`)
-//     .style('height', `${height}px`);
-// canvas
-//     .node()
-//     .getContext('2d')
-//     .scale(screenScale, screenScale);
-// add in an interaction layer as an SVG
-
-
-
 // Linked views
 var linkedView1 = [];
 var linkedView2 = [];
@@ -139,7 +120,7 @@ function defaultColoring(d)
       if(medClass < 0 )
         return "blue";
       else
-        return gDefaultStreamgraphColRange(medClass); 
+        return gDefaultColRange(gDefaultMedMajorClass[medClass]); 
   }
   else
     return "blue"; 
@@ -170,7 +151,7 @@ function expColoring(d)
       if(medClass < 0 )
         return "blue";
       else
-        return gDefaultStreamgraphColRange(medClass); 
+        return gExpColRange(gExpertMedClass[medClass]); 
   }
   else
     return "blue"; 
@@ -343,6 +324,9 @@ function redrawAll()
       //   if(d.name == gStreamGraphKeys[i])
       //     return 1;
       // }
+
+      if(gRxAllPatientsKeys.length == 0)
+        return 0;
       for(var i = 0; i < gRxAllPatientsKeys[gPatient].length; i++){
         if(d.name == gRxAllPatientsKeys[gPatient][i])
           return 1;
@@ -407,7 +391,7 @@ function redrawAll()
         //   if(d.key == gStreamBandColors[j].name)
         //     return gStreamBandColors[j].color;
         // }
-        // return gDefaultStreamgraphColRange(i);
+        // return gDefaultColRange(i);
           var medClass = -1;
           for(var ii = 0; ii < gMedProperties.length; ii++)
           {
@@ -425,7 +409,7 @@ function redrawAll()
             if(medClass >= 0)
               break;
           }  
-            return gDefaultStreamgraphColRange(medClass); 
+            return expColoring(gExpertMedClass[medClass]); 
           // expColoring(d);
         });
   }
@@ -568,7 +552,7 @@ var valueline2 = d3.line()
       // .append("text")
       // .attr("x", width+12)
       // .attr("y", function (d, i) { return  i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
-      // // .style("fill", function (d,i) { return gDefaultStreamgraphColRange(i); })
+      // // .style("fill", function (d,i) { return gDefaultColRange(i); })
       // .text(function (d) { return d })
       // .attr("text-anchor", "left")
       // .style("alignment-baseline", "middle")  
@@ -641,7 +625,16 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight)
                 .style("fill", function (d) { 
                   return defaultColoring(d);
                 })
-                .attr("opacity", 0.1);
+                .attr("opacity", 0.1)
+                .on("mouseover", function(d, i) {
+                  scSvg.append("circle")
+                  .attr("r", 30)
+                  .attr("opacity", 0.1)
+                  .attr("cx", function(d){return x(d.V0);})
+                  .attr("cy", function(d){return y(d.V1);})
+                  .style('stroke', '#AAA')
+                  .style('fill', '#CCC');
+                });
             var ww = 14;
 
             // // With concentric circles
@@ -704,7 +697,7 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight)
     .attr("x",scwidth-15)
     .attr("y",function (d, i) { return 20 + i * 25 - ww/2; }) 
     .style("fill", function(d,i){
-      return gDefaultStreamgraphColRange(i);
+      return gExpColRange(d);
     })
 
     scSvg.append("g").selectAll("expLabels")
@@ -713,7 +706,7 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight)
     .append("text")
     .attr("x", scwidth)
     .attr("y", function (d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
-    // .style("fill", function (d,i) { return gDefaultStreamgraphColRange(i); })
+    // .style("fill", function (d,i) { return gDefaultColRange(i); })
     .text(function (d) { return d })
     .attr("text-anchor", "left")
     .style("alignment-baseline", "middle")  
@@ -725,7 +718,7 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight)
     .attr("cx", scwidth-15)
     .attr("cy", function (d, i) { return 320 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
     .attr("r", 7)
-    .style("fill", function (d,i) { return gDefaultStreamgraphColRange(i); })
+    .style("fill", function (d,i) { return gDefaultColRange(d); })
 
     scSvg.append("g").selectAll("defaultLabels")
     .data(gDefaultMedClass)
@@ -733,7 +726,7 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight)
     .append("text")
     .attr("x", scwidth)
     .attr("y", function (d, i) { return 320 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
-    // .style("fill", function (d,i) { return gDefaultStreamgraphColRange(i); })
+    // .style("fill", function (d,i) { return gDefaultColRange(i); })
     .text(function (d) { return d })
     .attr("text-anchor", "left")
     .style("alignment-baseline", "middle")  
@@ -806,7 +799,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
     // {
     //   z = d3.scaleOrdinal(d3.schemeTableau10);
     // }
-    // gDefaultStreamgraphColRange = z;   
+    // gDefaultColRange = z;   
 
     var xAxis = d3.axisBottom(x)
         .ticks(20);
@@ -940,7 +933,11 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
               if(medClass >= 0)
                 break;
             }  
-              return gDefaultStreamgraphColRange(medClass); 
+            if(medClass < 0)
+            return "blue";
+            else
+              // return gDefaultColRange(medClass); 
+              return gExpColRange(gExpertMedClass[medClass]);
             // expColoring(d);
           });
         ;
@@ -968,7 +965,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
         .attr("cx", width+margin.left+5)
         .attr("cy", function (d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
         .attr("r", 7)
-        .style("fill", function (d,i) { return gDefaultStreamgraphColRange(i); })
+        .style("fill", function (d,i) { return gExpColRange(d); })
 
       svg.append("g").selectAll("mylabels")
         .data(gExpertMedClass)
@@ -976,7 +973,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight)
         .append("text")
         .attr("x", width+margin.left+12)
         .attr("y", function (d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
-        // .style("fill", function (d,i) { return gDefaultStreamgraphColRange(i); })
+        // .style("fill", function (d,i) { return gDefaultColRange(i); })
         .text(function (d) { return d })
         .attr("text-anchor", "left")
         .style("alignment-baseline", "middle")
@@ -1277,6 +1274,71 @@ function preprocessAllRx()
  
 }
 
+function tcmExpColorMap()
+{
+  var accentScheme = ["#7fc97f","#beaed4","#fdc086","#ffff99","#386cb0","#f0027f","#bf5b17","#666666"];
+ var cat10Scheme = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"]; 
+  // The paired scheme
+  var pairedScheme = ["#a6cee3","#1f78b4","#b2df8a","#33a02c","#fb9a99","#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a","#ffff99","#b15928"];
+  var tableau10Scheme = ["#4e79a7","#f28e2c","#e15759","#76b7b2","#59a14f","#edc949","#af7aa1","#ff9da7","#9c755f","#bab0ab"];
+  var set3Scheme = ["#8dd3c7","#ffffb3","#bebada","#fb8072","#80b1d3","#fdb462","#b3de69","#fccde5","#d9d9d9","#bc80bd","#ccebc5","#ffed6f"];
+  // Medicine class colormap
+  // 凉血止血——红系（冷色调）
+  // 安神——粉红（一般入心，赤）
+// 补肾——黑色
+// 补脾——黄色（正色）
+
+// 泄浊毒类——褐色
+// 活血——红色（非正色）
+// 清热——绿色系列（非正色）
+// 祛湿——蓝色系列（非正色）
+
+
+// 祛风止痒、解表类——白色系（这两类药物辛散的特性，入肺，白）
+// 降蛋白——紫色可以
+// 收敛药——绿色系（酸入肝，青）
+// 消食类——黄色系列（一般入脾胃，黄）
+// 理气类——绿色系（青）
+  var colorMap = d3.scaleOrdinal()
+  .domain(["凉血止血","安神类","泄浊毒类","活血类","清热类（利湿/解毒）","祛风止痒类","补肾类（降蛋白尿）","补脾益气类","降蛋白尿"])
+  .range(["#e15759","#fb9a99","#b15928","#e31a1c","#33a02c","#d9d9d9","#666666","#ffed6f","#cab2d6"]);
+
+  return colorMap;
+}
+
+function tcmDefaultColorMap()
+{
+  var accentScheme = ["#7fc97f","#beaed4","#fdc086","#ffff99","#386cb0","#f0027f","#bf5b17","#666666"];
+ var cat10Scheme = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"]; 
+  // The paired scheme
+  var pairedScheme = ["#a6cee3","#1f78b4","#b2df8a","#33a02c","#fb9a99","#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a","#ffff99","#b15928"];
+  var tableau10Scheme = ["#4e79a7","#f28e2c","#e15759","#76b7b2","#59a14f","#edc949","#af7aa1","#ff9da7","#9c755f","#bab0ab"];
+  var set3Scheme = ["#8dd3c7","#ffffb3","#bebada","#fb8072","#80b1d3","#fdb462","#b3de69","#fccde5","#d9d9d9","#bc80bd","#ccebc5","#ffed6f"];
+  // Medicine class colormap
+  // 凉血止血——红系（冷色调）
+  // 安神——粉红（一般入心，赤）
+// 补肾——黑色
+// 补脾——黄色（正色）
+
+// 泄浊毒类——褐色
+// 活血——红色（非正色）
+// 清热——绿色系列（非正色）
+// 祛湿——蓝色系列（非正色）
+
+
+// 祛风止痒、解表类——白色系（这两类药物辛散的特性，入肺，白）
+// 降蛋白——紫色可以
+// 收敛药——绿色系（酸入肝，青）
+// 消食类——黄色系列（一般入脾胃，黄）
+// 理气类——绿色系（青）
+  var colorMap = d3.scaleOrdinal()
+  .domain(["止血药","养心安神","泻下药","活血祛瘀","清热类","补虚药","祛湿类","解表药","收敛药","消食药","理气药"])
+  .range(["#e15759","#fb9a99","#b15928","#e31a1c","#33a02c","#666666","#7fc97f","#d9d9d9","#2ca02c","#ffff99","#1f77b4"]);
+
+  return colorMap;
+}
+
+
 function tcmVAmain()
 {
   // 0. convert medical record files when not been done.
@@ -1286,9 +1348,10 @@ function tcmVAmain()
   drawTable();
   // If we have a classificiation of medicine
   if (gDefaultMedMajorClass.length > 0) {
-    gDefaultStreamgraphColRange = d3.scaleOrdinal(d3.schemePaired);
+    gDefaultColRange = d3.scaleOrdinal(d3.schemePaired);
   }
-
+  gDefaultColRange = tcmDefaultColorMap();
+  gExpColRange = tcmExpColorMap();
   // 1.Prepare the scatterplots
   d3.csv("./newdata.csv", function (data) {
     for (var i = 0; i < data.length; i++) {
