@@ -4,7 +4,7 @@
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     <meta content="utf-8" http-equiv="encoding">
 </head>
-<title>Basic Parallel Coordinates Example</title>
+<title>TCM VA</title>
 <link rel="stylesheet" href="w3.css"> 
 <script src="d3.v4.min.js"></script>
 <script src="d3-scale-chromatic.min.js"></script>
@@ -17,7 +17,7 @@
                 <a href="./byebye.html">Quit</a>
             </div>
             <div id="headText" class="w3-center w3-padding-12">
-                    <h2><b>中药肾病治疗可视分析</b></h2>
+                    <h2><b>中医病案可视分析</b></h2>
              </div>
     </div>        
 </div>
@@ -116,12 +116,13 @@ table {
 		}
 	}
 	
+
 </style>
 
-<div id="VAcanvas" class="w3-main w3-content w3-cell-row"style="max-width:2000px;">
+<div id="VAcanvas" class=" w3-content w2-mobile w3-cell-row "style=" height:1000px;width:1600px;overflow:scroll">
     <!-- <div class = "w3-cell-row"> -->
-  
-        <div class="w3-conainter w3-cell w3-mobile">
+		
+        <div class="w3-conainter w3-cell w3-mobile" style="overflow:auto">
 
             <div id="streamGraph" class=" w3-container parcoords" style="width:1500px;height:400px;"></div>
             <div id="lineCharts" class=" w3-container" style="width:1500px;height:200px;"></div>
@@ -132,12 +133,18 @@ table {
 			<select id="compareModeSelectButton" ></select>
             <div id="exampleSC" class="w3-container" style="width:1600px;height:700px;">        </div>    
         </div>
-        <div class = "w3-container w3-cell w3-mobile">
-            <div id="page-wrap" class="w3-container" style="width:600px;height:500px"></div>
+        <div class = "w3-container w3-cell w3-mobile" style="overflow-x:scroll">
+            <div id="page-wrap" class="w3-container" style="width:600px;height:500px;"></div>
         </div>
     <!-- </div> -->
 </div>
-
+<style>
+/* div.VAcanvas {
+	background-color: #FFFFFF;
+	/* overflow-x: auto; 
+    overflow-y: scroll;  
+} */
+</style>
 
 </body>
 

@@ -466,7 +466,7 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight) {
   var y0 = d3.scaleLinear().range([height, 0]);
   var y1 = d3.scaleLinear().range([height, 0]);
 
-  var xAxis = d3.axisBottom(x).ticks(20);
+
 
   var yAxisLeft = d3.axisLeft(y0).ticks(5);
 
@@ -485,7 +485,8 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight) {
   // Get the data
   d3.csv(csvName, function (error, data) {
     data.forEach(function (d) {
-      d.date = parseDate(d.date);
+      d.date = (d.date);
+
       d.visit = +d.visit;
       if (d.v0 == "x") {
         d.v0 = NaN;
@@ -514,17 +515,17 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight) {
     //   });
 
     var line = d3.line().defined(d => !isNaN(d.v0))
-    .x(d => x(d.visit))
-    .y(d => y0(d.v0));
+      .x(d => x(d.visit))
+      .y(d => y0(d.v0));
 
     // var valueline2 = d3.line()
     //   .x(function (d) { return x(d.visit); })
     //   .y(function (d) { return y1(d.v1); });
 
-      var line2 = d3.line().defined(d => !isNaN(d.v1))
+    var line2 = d3.line().defined(d => !isNaN(d.v1))
       .x(d => x(d.visit))
       .y(d => y1(d.v1));
-  
+
     // Scale the range of the data
     // x.domain(d3.extent(data, function (d) { return d.date; }));
     x.domain(d3.extent(data, function (d) { return d.visit; }));
@@ -535,37 +536,43 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight) {
       return Math.max(d.v1);
     })]);
 
+    var xAxis = d3.axisBottom(x).ticks(20)
+    .tickFormat(function(d, i){ 
+      var date = data[i].date;
+      // console.log(date);
+      return date; 
+    });
     // svg.append("path")        // Add the valueline path.
     //   .attr("d", valueline(data))
     //   .attr("stroke", "steelblue")
     //   .style("stroke-width", 2)
     //   .style("fill", "none");
-// draw line1 with missing data
-      svg.append("path")
+    // draw line1 with missing data
+    svg.append("path")
       .datum(data.filter(line.defined()))
       .attr("stroke", "#ccc")
       .attr("d", line)
-      .style("fill","none");
-  
-  svg.append("path")
+      .style("fill", "none");
+
+    svg.append("path")
       .datum(data)
       .attr("stroke", "steelblue")
       .attr("stroke-width", 1.5)
       .attr("d", line)
-      .style("fill","none");
-// draw line 2 with missing data
-svg.append("path")
-.datum(data.filter(line2.defined()))
-.attr("stroke", "#ccc")
-.attr("d", line2)
-.style("fill","none");
+      .style("fill", "none");
+    // draw line 2 with missing data
+    svg.append("path")
+      .datum(data.filter(line2.defined()))
+      .attr("stroke", "#ccc")
+      .attr("d", line2)
+      .style("fill", "none");
 
-svg.append("path")
-.datum(data)
-.attr("stroke", "#FFB018")
-.attr("stroke-width", 1.5)
-.attr("d", line2)
-.style("fill","none");
+    svg.append("path")
+      .datum(data)
+      .attr("stroke", "#FFB018")
+      .attr("stroke-width", 1.5)
+      .attr("d", line2)
+      .style("fill", "none");
 
     // svg.append("path")        // Add the valueline2 path.
     //   .style("stroke", "red")
@@ -610,14 +617,15 @@ svg.append("path")
       .attr("class", "x axis")
       .attr("transform", "translate(0," + height + ")")
       .style("fill", "none")
-      .call(xAxis);
+      .call(xAxis)
+     
     ////
     svg.append("text")
       .attr("transform",
         "translate(" + (width / 2) + " ," +
         (height + margin.top + 10) + ")")
       .style("text-anchor", "middle")
-      .text("就诊次数");
+      .text("就诊日期");
     ////
     svg.append("g")
       .attr("class", "y axis")
@@ -1404,7 +1412,7 @@ function tcmExpColorMap() {
   // 理气类——绿色系（青）
   var colorMap = d3.scaleOrdinal()
     .domain(["凉血止血", "安神类", "泄浊毒类", "活血类", "清热类（利湿/解毒）", "祛风止痒类", "补肾类（降蛋白尿）", "补脾益气类", "降蛋白尿"])
-    .range(["#e15759", "#fb9a99", "#b15928", "#e31a1c", "#33a02c", "#d9d9d9", "#666666", "#ffed6f", "#cab2d6"]);
+    .range(["#ff7f00", "#fb9a99", "#b15928", "#e15759", "#b2df8a", "#d9d9d9", "#6a3d9a", "#fdbf6f", "#cab2d6"]);
 
   return colorMap;
 }
@@ -1434,10 +1442,10 @@ function tcmDefaultColorMap() {
   // 消食类——黄色系列（一般入脾胃，黄）
   // 理气类——绿色系（青）
   var colorMap = d3.scaleOrdinal()
-    .domain(["止血药", "养心安神药", "泻下药", "活血祛瘀", "清热类（清热解毒/清热利湿/清热凉血/清热通淋/清热燥湿/清热泻火）",
+    .domain(["止血药", "养心安神药", "泻下药", "活血祛瘀药", "清热类（清热解毒/清热利湿/清热凉血/清热通淋/清热燥湿/清热泻火）",
       "补虚药（补气/养血/助阳/滋阴/祛风湿）", "祛湿类（化湿/利水渗湿）", "解表药", "收敛药", "消食药", "理气药"])
-    .range(["#e15759", "#fb9a99", "#b15928", "#e31a1c", "#33a02c",
-      "#666666", "#a6cee3", "#d9d9d9", "#8dd3c7", "#FFB018", "#1f77b4"]);
+    .range(["#ff7f00", "#fb9a99", "#b15928", "#e15759", "#b2df8a",
+      "#6a3d9a", "#a6cee3", "#d9d9d9", "#8dd3c7", "#FFB018", "#1f77b4"]);
 
   return colorMap;
 }
