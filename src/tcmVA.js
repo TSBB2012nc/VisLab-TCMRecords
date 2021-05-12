@@ -554,7 +554,6 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight) {
       .attr("d", line)
       .style("fill","none");
 // draw line 2 with missing data
-// draw line1 with missing data
 svg.append("path")
 .datum(data.filter(line2.defined()))
 .attr("stroke", "#ccc")
@@ -598,7 +597,12 @@ svg.append("path")
     circleNode.append("circle")
       .attr("class", "data-circle")
       .attr("r", 5)
-      .style("fill", "red")
+      .style("fill", function (d) {
+        if (!isNaN(d.v1))
+          return "#FFB018";
+        else
+          return "none";
+      })
       .attr("cx", function (d) { return x(d.visit); })
       .attr("cy", function (d) { return y1(d.v1); })
 
