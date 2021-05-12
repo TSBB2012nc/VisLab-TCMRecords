@@ -532,12 +532,28 @@ var valueline2 = d3.line()
       .attr("transform", "translate(0," + height + ")")
       .style("fill","none")
       .call(xAxis);
-
+////
+    svg.append("text")             
+      .attr("transform",
+            "translate(" + (width/2) + " ," + 
+                           (height + margin.top + 10) + ")")
+      .style("text-anchor", "middle")
+      .text("Date");
+////
     svg.append("g")
       .attr("class", "y axis")
       .style("stroke", "steelblue")
       .style("fill","none")
       .call(yAxisLeft);
+////    
+    svg.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0 - margin.left)
+      .attr("x",0 - (height / 2))
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .text("尿蛋白");      
+/////
 
     svg.append("g")
       .attr("class", "y axis")
@@ -545,6 +561,14 @@ var valueline2 = d3.line()
       .style("fill","none")
       .style("stroke", "red")
       .call(yAxisRight);
+
+    svg.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", margin.left+1300)
+      .attr("x",0 - (height / 2))
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .text("血肌酐"); 
 
       // svg.append("g").selectAll("expLabels")
       // .data(gExpertMedClass)
