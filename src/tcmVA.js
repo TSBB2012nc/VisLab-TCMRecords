@@ -319,6 +319,19 @@ function redrawAll() {
       }
       return 0.05;
     });
+  // update opacity of text
+  var textSymp = context1.selectAll(".dotLabel");
+  textSymp.data(gPoints)
+    // draw text of medicine
+    .attr("opacity", function (d) {
+      if (gRxAllPatientsKeys.length == 0)
+        return 0;
+      for (var i = 0; i < gRxAllPatientsKeys[gPatient].length; i++) {
+        if (d.name == gRxAllPatientsKeys[gPatient][i])
+          return 1;
+      }
+      return 0.05;
+    });
   // interactive lens
   context1.on("mouseover", function () {
     mousex = d3.mouse(this);
@@ -372,7 +385,19 @@ function redrawAll() {
       }
       return 0.05;
     });
-
+  // update opacity of text
+  var textSqww = context2.selectAll(".dotLabel");
+  textSqww.data(gPoints)
+    // draw text of medicine
+    .attr("opacity", function (d) {
+      if (gRxAllPatientsKeys.length == 0)
+        return 0;
+      for (var i = 0; i < gRxAllPatientsKeys[gPatientCompare].length; i++) {
+        if (d.name == gRxAllPatientsKeys[gPatientCompare][i])
+          return 1;
+      }
+      return 0.05;
+    });
   // interactive lens
   context2.on("mouseover", function () {
     mousex = d3.mouse(this);
@@ -688,9 +713,9 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
     .range([0, scwidth - legendWidth]);
 
   var y = d3.scaleLinear()
-    .range([scheight - legendWidth, 0]);
+    .range([scheight, 0]);
   var xAxis = d3.axisBottom(x)
-    .ticks(1);
+    .ticks(0);
 
   var yAxis = d3.axisLeft(y)
     .ticks(0);
@@ -779,7 +804,9 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
       return expColoring(d);
     })
 
+  // draw text of medicine
   node.append("text")
+    .attr("class","dotLabel")
     .text(function (d) { return d.name; })
     .style("font-size", "12px")
     .attr("x", function (d) { return x(d.V0) - 30; })
@@ -1545,6 +1572,17 @@ function tcmVAmain() {
 
   // mode selector
   var scMode = ['四气五味', '症状'];
+  var defaultOptionName = '症状';
+  d3.select("#mainModeSelectButton")
+    .selectAll('mainModeOptions')
+    .data(scMode)
+    .enter()
+    .append('option')
+    .text(function (d) { return d; }) // text showed in the menu
+    .attr("value", function (d) { return d; }) // corresponding value returned by the button
+    .property("selected", function(d){ return d === defaultOptionName; });
+
+
   d3.select("#compareModeSelectButton")
     .selectAll('compareModeOptions')
     .data(scMode)
@@ -1552,6 +1590,7 @@ function tcmVAmain() {
     .append('option')
     .text(function (d) { return d; }) // text showed in the menu
     .attr("value", function (d) { return d; }) // corresponding value returned by the button
+    .property("selected", function(d){ return d === '四气五味'; });
 
   // draw streamgraph with the patient
   drawStreamGraph(gRxFilenameList[gPatient], "#streamGraph", g_sgwidth, g_sgheight);
@@ -1606,6 +1645,25 @@ function tcmVAmain() {
     d3.select("#scCompare").remove();
     // draw scatter plots
 
+    drawSConDiv(scData, "scCompare", "#exampleSC", g_scwidth, g_scheight);
+    redrawAll();
+  });
+
+  // Main mode
+  d3.select("#mainModeSelectButton").on("change", function (d) {
+    var selectedOption = d3.select(this).property("value")
+    var mainscData = [];
+    if (selectedOption === "症状") {
+      mainscData = gSympData;
+    }
+    else
+    mainscData = gSqwwData;
+    // Clear scatterplot
+    d3.select("#scSymp").remove();
+    d3.select("#scCompare").remove();
+    // draw scatter plots
+
+    drawSConDiv(mainscData, "scSymp", "#exampleSC", g_scwidth, g_scheight);
     drawSConDiv(scData, "scCompare", "#exampleSC", g_scwidth, g_scheight);
     redrawAll();
   });
