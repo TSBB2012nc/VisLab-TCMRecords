@@ -4,7 +4,7 @@ var g_scwidth = 660;
 var g_scheight = 660;
 var g_sgwidth = 1400;
 var g_sgLegendWidth = 100;
-var g_sgheight = 400;
+var g_sgheight = 300;
 var gBrushes = [];
 var gSympData = [];
 var gSqwwData = [];
@@ -479,8 +479,8 @@ function lassoFunctionInstance2(interactionSvg) {
 }
 
 // Draw linecharts
-function drawLinecharts(csvName, divName, sgWidth, sgHeight) {
-  var margin = { top: 20, right: 40, bottom: 40, left: 50 };
+function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
+  var margin = { top: 5, right: 40, bottom: 20, left: 50 };
   // var parseDate = d3.time.format("%d-%b-%y").parse;
   var parseDate = d3.timeParse("%d-%b-%y");
 
@@ -491,16 +491,17 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight) {
   var y0 = d3.scaleLinear().range([height, 0]);
   var y1 = d3.scaleLinear().range([height, 0]);
 
-
-
   var yAxisLeft = d3.axisLeft(y0).ticks(5);
-
   var yAxisRight = d3.axisRight(y1).ticks(5);
-
 
   var svg = d3.select(divName)
     .append("svg")
-    .attr('class', "linechart")
+    .attr('class', function(){
+        if(isPulse)
+        return "linechart";
+        else
+        return "linechartPulse";
+    })
     .attr("width", width + margin.left + margin.right + g_sgLegendWidth)
     .attr("height", height + margin.bottom + margin.top)
     .append("g")
@@ -525,8 +526,9 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight) {
       else {
         d.v0 = +d.v0;
         d.v1 = +d.v1;
-
       }
+      d.sbp = +d.SBP;
+      d.dbp = +d.DBP;
     });
 
     var vl1data = data;
@@ -539,27 +541,44 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight) {
     //       return y0(vl1data[i-1].v0);
     //   });
 
-    var line = d3.line().defined(d => !isNaN(d.v0))
+    var line = [];
+    var line2 = [];
+    if(!isPulse){
+      line = d3.line().defined(d => !isNaN(d.v0))
       .x(d => x(d.visit))
       .y(d => y0(d.v0));
 
-    // var valueline2 = d3.line()
-    //   .x(function (d) { return x(d.visit); })
-    //   .y(function (d) { return y1(d.v1); });
-
-    var line2 = d3.line().defined(d => !isNaN(d.v1))
+      line2 = d3.line().defined(d => !isNaN(d.v1))
       .x(d => x(d.visit))
       .y(d => y1(d.v1));
+    }
+    else{
+      line = d3.line().defined(d => !isNaN(d.sbp))
+      .x(d => x(d.visit))
+      .y(d => y0(d.sbp));
 
+      line2 = d3.line().defined(d => !isNaN(d.dbp))
+      .x(d => x(d.visit))
+      .y(d => y0(d.dbp));
+    }
+  
     // Scale the range of the data
     // x.domain(d3.extent(data, function (d) { return d.date; }));
     x.domain(d3.extent(data, function (d) { return d.visit; }));
-    y0.domain([0, d3.max(data, function (d) {
-      return Math.max(d.v0);
-    })]);
-    y1.domain([0, d3.max(data, function (d) {
-      return Math.max(d.v1);
-    })]);
+
+    if(!isPulse){
+      y0.domain([0, d3.max(data, function (d) {
+        return Math.max(d.v0);
+      })]);
+      y1.domain([0, d3.max(data, function (d) {
+        return Math.max(d.v1);
+      })]);  
+    }else{
+
+      y0.domain([0, d3.max(data, function (d) {
+        return Math.max(d.sbp, d.dbp);
+      })]);
+    }
 
     var xAxis = d3.axisBottom(x).ticks(20)
     .tickFormat(function(d, i){ 
@@ -581,8 +600,14 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight) {
 
     svg.append("path")
       .datum(data)
-      .attr("stroke", "steelblue")
-      .attr("stroke-width", 1.5)
+      // .attr("stroke", "steelblue")
+      .attr("stroke", function(){
+        if (isPulse)
+          return "#67a9cf";
+        else
+          return "steelblue";
+      })
+      .attr("stroke-width", 2.5)
       .attr("d", line)
       .style("fill", "none");
     // draw line 2 with missing data
@@ -594,8 +619,14 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight) {
 
     svg.append("path")
       .datum(data)
-      .attr("stroke", "#FFB018")
-      .attr("stroke-width", 1.5)
+      // .attr("stroke", "#FFB018")
+      .attr("stroke", function(){
+        if (isPulse)
+          return "#ef8a62";
+        else
+          return "#FFB018";
+      })
+      .attr("stroke-width", 2.5)
       .attr("d", line2)
       .style("fill", "none");
 
@@ -609,7 +640,9 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight) {
       .data(data)
       .enter();
 
-    circleNode.append("circle")
+    if(!isPulse) // for test results
+    {
+      circleNode.append("circle")
       .attr("class", "data-circle")
       .attr("r", 5)
       .attr("cx", function (d) { return x(d.visit); })
@@ -637,7 +670,38 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight) {
       })
       .attr("cx", function (d) { return x(d.visit); })
       .attr("cy", function (d) { return y1(d.v1); })
+    }
+    else{ // for pulse
+      circleNode.append("circle")
+        .attr("class", "data-circle")
+        .attr("r", 5)
+        .attr("cx", function (d) { return x(d.visit); })
+        .attr("cy", function (d) {
+          if (d.sbp >= 0)
+            return y0(d.sbp);
+          else
+            return 0;
+        })
+        .style("fill", function (d) {
+          if (d.sbp >= 0)
+            return "#67a9cf";
+          else
+            return "none";
+        });
 
+      circleNode.append("circle")
+        .attr("class", "data-circle")
+        .attr("r", 5)
+        .style("fill", function (d) {
+          if (!isNaN(d.dbp))
+            return "#ef8a62";
+          else
+            return "none";
+        })
+        .attr("cx", function (d) { return x(d.visit); })
+        .attr("cy", function (d) { return y0(d.dbp); })
+    }
+    
     svg.append("g")            // Add the X Axis
       .attr("class", "x axis")
       .attr("transform", "translate(0," + height + ")")
@@ -645,12 +709,12 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight) {
       .call(xAxis)
      
     ////
-    svg.append("text")
-      .attr("transform",
-        "translate(" + (width / 2) + " ," +
-        (height + margin.top + 10) + ")")
-      .style("text-anchor", "middle")
-      .text("就诊日期");
+    // svg.append("text")
+    //   .attr("transform",
+    //     "translate(" + (width / 2) + " ," +
+    //     (height + margin.top + 10) + ")")
+    //   .style("text-anchor", "middle")
+    //   .text("就诊日期");
     ////
     svg.append("g")
       .attr("class", "y axis")
@@ -658,29 +722,54 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight) {
       .style("fill", "none")
       .call(yAxisLeft);
     ////    
-    svg.append("text")
+    if(!isPulse)
+    {
+      svg.append("text")
       .attr("transform", "rotate(-90)")
       .attr("y", 0 - margin.left)
-      .attr("x", 0 - (height / 2))
+      .attr("x", 0 - (0.7 * height ))
       .attr("dy", "1em")
       .style("text-anchor", "middle")
-      .text("尿蛋白");
-    /////
+      .style("font-size", "12px")
+      .text(function(){
+       if(gPatient == 0) 
+        return "蛋白尿g/L";
+       else
+        return "蛋白尿mg/24h";
+      });
+      /////
 
-    svg.append("g")
-      .attr("class", "y axis")
-      .attr("transform", "translate(" + width + " ,0)")
-      .style("fill", "none")
-      .style("stroke", "#FFB018")
-      .call(yAxisRight);
-
-    svg.append("text")
+      if(gPatient != 0){
+        svg.append("g")
+        .attr("class", "y axis")
+        .attr("transform", "translate(" + width + " ,0)")
+        .style("fill", "none")
+        .style("stroke", "#FFB018")
+        .call(yAxisRight);
+  
+       svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", margin.left + 1300)
+        .attr("x", 0 - (0.7 * height))
+        .attr("dy", "1em")
+        .style("font-size", "12px")
+        .style("text-anchor", "middle")
+        .text("血肌酐 umol/L");
+      }
+    }
+    else
+    {
+      svg.append("text")
       .attr("transform", "rotate(-90)")
-      .attr("y", margin.left + 1300)
-      .attr("x", 0 - (height / 2))
+      .attr("y", 0 - margin.left)
+      .attr("x", 0 - (0.7 * height ))
       .attr("dy", "1em")
+      .style("font-size", "12px")
       .style("text-anchor", "middle")
-      .text("血肌酐");
+      .text("脉搏 次/分钟");
+    }
+
+   
 
     // svg.append("g").selectAll("expLabels")
     // .data(gExpertMedClass)
@@ -1038,7 +1127,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
     x.domain(d3.extent(data, function (d) { return d.visit; }));
     // y.domain([0, d3.max(data, function(d) { return d.y0 + d.y; })]);
     // y.domain([0, d3.extent(data, function(d) {return d[0] + d[1];})]);
-    y.domain([-180, 180]);
+    y.domain([-120, 120]);
 
     //   svg.selectAll(".layer")
     //       .data(layers)
@@ -1594,8 +1683,9 @@ function tcmVAmain() {
 
   // draw streamgraph with the patient
   drawStreamGraph(gRxFilenameList[gPatient], "#streamGraph", g_sgwidth, g_sgheight);
-  // draw a line chart
-  drawLinecharts(gTestFilenameList[gPatient], "#lineCharts", g_sgwidth, 150);
+  // draw line charts
+  drawLinecharts(gTestFilenameList[gPatient], "#lineCharts", g_sgwidth, 100);
+  drawLinecharts(gTestFilenameList[gPatient], "#lineCharts", g_sgwidth, 100, true);
 
   // When the button is changed, run the updateChart function
   d3.select("#selectButton").on("change", function (d) {
@@ -1614,13 +1704,13 @@ function tcmVAmain() {
         if (RxDataName === gRxFilenameList[i]) {
           gPatient = i;
           break;
-
         }
       }
       // Clear line charts
       d3.select("#lineCharts").selectAll("svg").remove();
       // draw a line chart
-      drawLinecharts(gTestFilenameList[gPatient], "#lineCharts", g_sgwidth, 150);
+      drawLinecharts(gTestFilenameList[gPatient], "#lineCharts", g_sgwidth, 100);
+      drawLinecharts(gTestFilenameList[gPatient], "#lineCharts", g_sgwidth, 100, true);
     }
     // update(selectedOption)
   })
