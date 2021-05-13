@@ -766,7 +766,7 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
       .attr("dy", "1em")
       .style("font-size", "12px")
       .style("text-anchor", "middle")
-      .text("脉搏 次/分钟");
+      .text("血压 mmHg");
     }
 
    
