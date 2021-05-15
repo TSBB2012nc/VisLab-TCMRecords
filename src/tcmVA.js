@@ -317,7 +317,7 @@ function redrawAll() {
         if (d.name == gRxAllPatientsKeys[gPatient][i])
           return 1;
       }
-      return 0.05;
+      return 0.02;
     });
   // update opacity of text
   var textSymp = context1.selectAll(".dotLabel");
@@ -330,7 +330,7 @@ function redrawAll() {
         if (d.name == gRxAllPatientsKeys[gPatient][i])
           return 1;
       }
-      return 0.05;
+      return 0.02;
     });
   // interactive lens
   context1.on("mouseover", function () {
@@ -343,8 +343,9 @@ function redrawAll() {
     var pointsInLens = [];
     for(var i = 0; i < gPoints.length; i++)
     {
+      // Mind the offest between canvas and the svg due to the margin!!!
       var pointCorrected = {};
-      pointCorrected.x = gPoints[i].x + margin.left;
+      pointCorrected.x = gPoints[i].x + margin.left; 
       pointCorrected.y = gPoints[i].y + margin.bottom;
 
 
@@ -359,26 +360,33 @@ function redrawAll() {
     var canvas = d3.select(".scSymp_canvas");
     // draw the lens covering the original layer
     canvas.selectAll(".lens").remove();
-    canvas.append("circle")
-      .attr("class", "lens")
+    var lensNode = canvas.append("g")
+      .attr("class", "lens");
+    
+    lensNode.append("circle")
       .attr("r", r)
       .attr("opacity", 0.8)
       .attr("cx", function () { return mousex[0]- margin.left;  }) //;
       .attr("cy", function () { return mousex[1]- margin.bottom;}) //- margin.bottom; 
       .style('stroke', '#AAA')
       .style('fill', '#CCC');
+    // add extra info
+   lensNode.append("text")
+   .text(function () { return "Vs. Patient "+ (gPatientCompare+1); })
+   .style("font-size", "12px")
+   .attr("x", function () { return mousex[0]- margin.left + r; })
+   .attr("y", function () { return mousex[1]- margin.bottom - r;; });
 
   // remove old items
-
   canvas.selectAll(".magicLensDot").remove();
   canvas.selectAll(".magicLensSquare").remove();
+  canvas.selectAll(".magicLensDotLabel").remove();
   // draw new items
     var node = canvas.selectAll(".magicLensDot")
        .data(pointsInLens)
       .enter();
       // .append("g");
-     // draw glyph
-
+     // draw the glyph
      node.append("circle")
      .attr("class", "magicLensDot")
      .attr("r", 15.5)
@@ -398,13 +406,13 @@ function redrawAll() {
          if (d.name == gRxAllPatientsKeys[gPatientCompare][j])
            return 1;
        }
-       return 0.05;
+       return 0.02;
      });
     // With inner rectangle
     var node2 = canvas.selectAll(".magicLensSquare")
-    .data(pointsInLens)
-   .enter();
-   node2.append("rect")
+      .data(pointsInLens)
+      .enter();
+    node2.append("rect")
       .attr("class", "magicLensSquare")
       .attr("width", ww)
       .attr("height", ww)
@@ -412,26 +420,34 @@ function redrawAll() {
       .attr("y", function (d) { return d.y - ww / 2; })
       .style("fill", function (d) {
         return expColoring(d);
-      })  
+      })
       .attr("opacity", function (d) {
         for (var j = 0; j < gRxAllPatientsKeys[gPatientCompare].length; j++) {
           if (d.name == gRxAllPatientsKeys[gPatientCompare][j])
             return 1;
         }
-        return 0.05;
+        return 0.02;
       });
-    // mousex = d3.mouse(this);
-    // // mousey = mousex[0] + 5;
-    // context1.selectAll(".lens").remove();
-    // context1.
-    //   append("circle")
-    //   .attr("class", "lens")
-    //   .attr("r", 30)
-    //   .attr("opacity", 0.1)
-    //   .attr("cx", function () { return mousex[0]; })
-    //   .attr("cy", function () { return mousex[1]; })
-    //   .style('stroke', '#AAA')
-    //   .style('fill', '#CCC');
+      // Draw text
+      var textNode = canvas.selectAll(".magicLensDotLabel");
+      textNode.data(pointsInLens)
+      .enter()
+      .append("text")
+      .attr("class","magicLensDotLabel")
+      .text(function (d) { return d.name; })
+      .style("font-size", "12px")
+      .attr("x", function (d) { return d.x - 30; })
+      .attr("y", function (d) { return d.y - 10; })
+      // draw text of medicine
+      .attr("opacity", function (d) {
+        if (gRxAllPatientsKeys.length == 0)
+          return 0;
+          for (var j = 0; j < gRxAllPatientsKeys[gPatientCompare].length; j++) {
+            if (d.name == gRxAllPatientsKeys[gPatientCompare][j])
+              return 1;
+          }
+          return 0.02;
+      });
   });
 
   var allRectsSymp = context1.selectAll(".square");
@@ -441,7 +457,7 @@ function redrawAll() {
         if (d.name == gRxAllPatientsKeys[gPatient][i])
           return 1;
       }
-      return 0.05;
+      return 0.02;
     });
 
   // Compare View
@@ -469,7 +485,7 @@ function redrawAll() {
         if (d.name == gRxAllPatientsKeys[gPatientCompare][i])
           return 1;
       }
-      return 0.05;
+      return 0.02;
     });
   // update opacity of text
   var textSqww = context2.selectAll(".dotLabel");
@@ -482,7 +498,7 @@ function redrawAll() {
         if (d.name == gRxAllPatientsKeys[gPatientCompare][i])
           return 1;
       }
-      return 0.05;
+      return 0.02;
     });
   // interactive lens
   context2.on("mouseover", function () {
@@ -508,7 +524,7 @@ function redrawAll() {
         if (d.name == gRxAllPatientsKeys[gPatientCompare][i])
           return 1;
       }
-      return 0.05;
+      return 0.02;
     });
 
   // Stream graph
@@ -1698,7 +1714,7 @@ function magicLens(r, scSvg) {
           if (d.name == gRxAllPatientsKeys[gPatientCompare][j])
             return 1;
         }
-        return 0.05;
+        return 0.02;
       });
     }
   }
