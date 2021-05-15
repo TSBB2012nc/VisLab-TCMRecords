@@ -939,7 +939,10 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
       .attr("x", scwidth)
       .attr("y", function (d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
       // .style("fill", function (d,i) { return gDefaultColRange(i); })
-      .text(function (d) { return d })
+      .text(function (d) { 
+          var newStr = d.replace(/ *\（[^)]*\） */g, "");
+           return newStr;  
+      })
       .attr("text-anchor", "left")
       .style("alignment-baseline", "middle")
 
@@ -961,7 +964,10 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
       .attr("x", scwidth)
       .attr("y", function (d, i) { return 320 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
       // .style("fill", function (d,i) { return gDefaultColRange(i); })
-      .text(function (d) { return d })
+      .text(function (d) {
+        var newStr = d.replace(/ *\（[^)]*\） */g, "");
+        return newStr;
+      })
       .attr("text-anchor", "left")
       .style("alignment-baseline", "middle")
 
@@ -1309,7 +1315,7 @@ function drawTable() {
 
     var dimensions = {};
     dimensions.width = 500;
-    dimensions.height = 800;
+    dimensions.height = 1000;
     var width = dimensions.width + "px";
     var height = dimensions.height + "px";
     var twidth = (dimensions.width - 25) + "px";
