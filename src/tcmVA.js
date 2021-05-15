@@ -26,6 +26,7 @@ var gNotSelectedPoints = [];
 var gStreamGraphLayers = [];
 var gStreamGraphKeys = [];
 var gStreamBandColors = [];
+var gStreamGraphSelected = null;
 // Expert classified colors and default (text book) colors
 var gExpColRange = [];
 var gDefaultColRange = [];
@@ -305,6 +306,19 @@ function redrawAll() {
       else
         return defaultColoring(d);//"#045A8D";
     })
+    .style("stroke",function(d){
+      // check if gStreamSelected is true
+      if(gStreamGraphSelected != null)
+      {
+        if(d.name === gStreamGraphSelected)
+          return "red";
+        else
+          return "none";
+      }
+      else
+        return "none";
+    })
+    .style("stroke-width",5)
     .attr("opacity", function (d) {
       // for(var i = 0; i < gStreamGraphKeys.length; i++){
       //   if(d.name == gStreamGraphKeys[i])
@@ -1139,13 +1153,6 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
 
   var z = d3.scaleOrdinal()
     .range(colorrange);
-  // // If we have a classificiation of medicine
-  // if(gDefaultMedMajorClass.length>0)
-  // {
-  //   z = d3.scaleOrdinal(d3.schemeTableau10);
-  // }
-  // gDefaultColRange = z;   
-
   var xAxis = d3.axisBottom(x)
     .ticks(20);
   // .ticks(function(d){return d.visit;});
@@ -1237,16 +1244,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
     // TODO: need to fix the y range
     //   x.domain(d3.extent(data, function(d) { return d.date; }));
     x.domain(d3.extent(data, function (d) { return d.visit; }));
-    // y.domain([0, d3.max(data, function(d) { return d.y0 + d.y; })]);
-    // y.domain([0, d3.extent(data, function(d) {return d[0] + d[1];})]);
     y.domain([-120, 120]);
-
-    //   svg.selectAll(".layer")
-    //       .data(layers)
-    //     .enter().append("path")
-    //       .attr("class", "layer")
-    //       .attr("d", function(d) { return area(d.values); })
-    //       .style("fill", function(d, i) { return z(i); });
 
     var layernode = svg.selectAll(".layer")
       .data(layers)
@@ -1352,6 +1350,8 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
         var invertedx = Math.round(x.invert(mousex));
         // invertedx = invertedx.getMonth() + invertedx.getDate();
         var selected = (d[invertedx].data);
+        // set global variable to update other views
+   
         //   console.log(selected);
         // for (var k = 0; k < selected.length; k++) {
         //   datearray[k] = selected[k].visit
@@ -1360,12 +1360,14 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
         mousedate = selected.visit;
         // mousedate = datearray.indexOf(invertedx);
         pro = selected[d.key];//d.data[mousedate].value;
-
+        gStreamGraphSelected = d.key; 
         d3.select(this)
           .classed("hover", true)
           .attr("stroke", strokecolor)
           .attr("stroke-width", "0.5px"),
           tooltip.html("<p>" + d.key + "<br>" + pro + "</p>").style("visibility", "visible");
+        if(d.key != null)
+          redrawAll();
 
       })
       .on("mouseout", function (d, i) {
@@ -1373,15 +1375,22 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
           .transition()
           .duration(250)
           .attr("opacity", "1");
+        
         d3.select(this)
           .classed("hover", false)
           .attr("stroke-width", "0px"), tooltip.html("<p>" + d.key + "<br>" + pro + "</p>").style("visibility", "hidden");
+        if( gStreamGraphSelected != null ) 
+        {
+          gStreamGraphSelected = null;
+          redrawAll();
+        }
       })
 
+    // The vertical slice line 
     var vertical = d3.select(divName)
       .append("div")
       .attr("class", "remove")
-      .style("position", "absolute")
+      .style("position", "relative")
       .style("z-index", "19")
       .style("width", "1px")
       .style("height", "380px")
