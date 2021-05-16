@@ -1246,19 +1246,57 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
     // TODO: need to fix the y range
     //   x.domain(d3.extent(data, function(d) { return d.date; }));
     x.domain(d3.extent(data, function (d) { return d.visit; }));
-    y.domain([-120, 120]);
+    y.domain([-120, 140]);
 
     var layernode = svg.selectAll(".layer")
       .data(layers)
       .enter();
 
+    // find the thickest region of each layer
+    var maxYloc = [];
+    for(var l = 0; l < layers.length; l++)
+    {
+      var thisLayer = layers[l];
+      var loc = {x:[], h:-Infinity, y0:[], y1:[]};
+      var hlist =[];
+
+      for(var t = 0; t < thisLayer.length; t++)
+      {
+          var hh = Math.abs(thisLayer[t][1]-thisLayer[t][0]);
+          hlist.push(hh);
+          if(hh >= loc.h)
+          {
+            loc.h = hh;
+
+          }
+      }
+
+      // Find x pos that has equal height of loc.h
+      for(var t = 0; t < thisLayer.length; t++)
+      {
+        if(hlist[t] >= loc.h)
+        {
+          loc.x.push(t);
+          loc.y0.push(thisLayer[t][0]);
+          loc.y1.push(thisLayer[t][1]);          
+        }
+      }
+      loc.hStd = math.std(hlist);
+      loc.hMed = math.median(hlist);
+      loc.key = thisLayer.key;
+      maxYloc.push(loc);
+    }
+
+    var layerTextCol = [];
     layernode.append("path")
       .attr("class", "layer")
       .attr("d", d3.area()
         .curve(d3.curveBasis)
         .x(function (d, i) { return x(d.data.visit); })
-        .y0(function (d) { return y(d[0]); })
-        .y1(function (d) { return y(d[1]); })
+        .y0(function (d,i) { 
+          return y(d[0]); })
+        .y1(function (d,i) { 
+          return y(d[1]); })
       )
       .style("fill", function (d, i) {
         var medClass = -1;
@@ -1279,48 +1317,69 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
         if (medClass < 0)
           return "blue";
         else
+        {
           // return gDefaultColRange(medClass); 
-          return gExpColRange(gExpertMedClass[medClass]);
+          var color = gExpColRange(gExpertMedClass[medClass]);
+          var labC = d3.lab(color);
+          if(labC.l > 50)
+            layerTextCol.push("black");
+          else
+            layerTextCol.push("white");
+          return color;
+
+        }
         // expColoring(d);
       });
     ;
 
-    var randX = 0;
-    var textnode = svg.selectAll("text").data(layers)
+    var textLoc = [];
+    var delta = 1;
+    for(var ii = 0; ii < maxYloc.length; ii++)
+    {
+       var randX = 0;
+       var locInfo = maxYloc[ii];  
+      var xBest = 0;
+      var yBest = 0;
+      if(locInfo.hMed + delta < locInfo.h)
+      {
+        var randInd = Math.round(math.random(0, locInfo.x.length-1));
+        var randMaxX = locInfo.x[randInd];
+        xBest = x(randMaxX) + math.random(0,5);
+        yBest = 0.5 * (y(locInfo.y0[randInd]) + y(locInfo.y1[randInd]));// + math.random(0,5); 
+      }
+      else
+      {
+        randX = Math.random() * (width - 20);
+        xBest = randX;
+        var rvisit = randX / (width - 1) * totalVisits;
+        yBest = 0.5 * (y(layers[ii][Math.round(rvisit)][0]) + y(layers[ii][Math.round(rvisit)][1])) ;
+        // return randX;
+      }
+      textLoc.push({x: xBest, y: yBest});
+    }
+
+    // Draw text!
+    var textnode = svg.selectAll("text").data(textLoc)
       .enter()
       .append("text")
-      .text(function (d) { return d.key; })
+      .text(function (d,i) { return layers[i].key; })
       .style("font-size", "12px")
+      .style("fill",function(d,i){return layerTextCol[i];})
       .attr("x", function (d) {
-        randX = Math.random() * (width - 20);//(totalVisits-1));
-        return randX; //x(randVisit); 
+        return d.x;
+        // randX = Math.random() * (width - 20);//(totalVisits-1));
+        // return randX; //x(randVisit); 
+        // if(d.h > maxYloc.mean + maxYloc.std)
+
+       
+        // else
+        //   randX = Math.random()
       })
       // .attr("y", function (d) { return 0.5 * (y(d[0])+y(d[1])); });
       .attr("y", function (d, i) {
-        var rvisit = randX / (width - 1) * totalVisits;
-        return 0.5 * (y(d[Math.round(rvisit)][0]) + y(d[Math.round(rvisit)][1]));
+        return d.y;  
+      
       });
-
-
-    // svg.append("g").selectAll("mydots")
-    //   .data(gExpertMedClass)
-    //   .enter()
-    //   .append("circle")
-    //   .attr("cx", width + margin.left + 5)
-    //   .attr("cy", function (d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
-    //   .attr("r", 7)
-    //   .style("fill", function (d, i) { return gExpColRange(d); })
-
-    // svg.append("g").selectAll("mylabels")
-    //   .data(gExpertMedClass)
-    //   .enter()
-    //   .append("text")
-    //   .attr("x", width + margin.left + 12)
-    //   .attr("y", function (d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
-    //   // .style("fill", function (d,i) { return gDefaultColRange(i); })
-    //   .text(function (d) { return d })
-    //   .attr("text-anchor", "left")
-    //   .style("alignment-baseline", "middle")
 
     var ww = 14; 
       svg.append("g").selectAll("expLabelsRect")
@@ -1351,7 +1410,8 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
 
     svg.append("g")
       .attr("class", "x axis")
-      .attr("transform", "translate(0," + height + ")")
+      //  .attr("transform", "translate(0," + height + ")")
+       .attr("transform", "translate(0," + height + ")")
       .call(xAxis);
 
     svg.append("g")
@@ -1414,30 +1474,30 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
         }
       })
 
-    // The vertical slice line 
-    var vertical = d3.select(divName)
-      .append("div")
-      .attr("class", "remove")
-      .style("position", "absolute")
-      .style("z-index", "19")
-      .style("width", "1px")
-      .style("height", "380px")
-      .style("top", "10px")
-      .style("bottom", "30px")
-      .style("left", "0px")
-      .style("background", "#fff");
+    // // The vertical slice line 
+    // var vertical = d3.select(divName)
+    //   .append("div")
+    //   .attr("class", "remove")
+    //   .style("position", "absolute")
+    //   .style("z-index", "19")
+    //   .style("width", "1px")
+    //   .style("height", "380px")
+    //   .style("top", "10px")
+    //   .style("bottom", "30px")
+    //   .style("left", "0px")
+    //   .style("background", "#fff");
 
-    d3.select(divName)
-      .on("mousemove", function () {
-        mousex = d3.mouse(this);
-        mousex = mousex[0] + 5;
-        vertical.style("left", mousex + "px")
-      })
-      .on("mouseover", function () {
-        mousex = d3.mouse(this);
-        mousex = mousex[0] + 5;
-        vertical.style("left", mousex + "px")
-      });
+    // d3.select(divName)
+    //   .on("mousemove", function () {
+    //     mousex = d3.mouse(this);
+    //     mousex = mousex[0] + 5;
+    //     vertical.style("left", mousex + "px")
+    //   })
+    //   .on("mouseover", function () {
+    //     mousex = d3.mouse(this);
+    //     mousex = mousex[0] + 5;
+    //     vertical.style("left", mousex + "px")
+    //   });
 
     redrawAll();
   });
