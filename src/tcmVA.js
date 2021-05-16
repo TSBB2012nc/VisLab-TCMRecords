@@ -1363,7 +1363,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
       .enter()
       .append("text")
       .text(function (d,i) { return layers[i].key; })
-      .style("font-size", "12px")
+      .style("font-size", "11px")
       .style("fill",function(d,i){return layerTextCol[i];})
       .attr("x", function (d) {
         return d.x;
