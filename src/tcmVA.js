@@ -1,7 +1,7 @@
 // global variables
 // Scatterplot
-var g_scwidth = 660;
-var g_scheight = 660;
+var g_scwidth = 600;
+var g_scheight = 600;
 var g_sgwidth = 1400;
 var g_sgLegendWidth = 100;
 var g_sgheight = 300;
@@ -905,6 +905,7 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
 // Draw scatterplots
 function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
   var legendWidth = 40;
+  var margin = { top: 5, right: 40, bottom: 5, left: 40 };
   var scSvg = d3.select(divName)
     .append("svg")
     .attr('class', scSvgName)
@@ -919,15 +920,14 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
   var x = d3.scaleLinear()
-    .range([0, scwidth - legendWidth]);
+    // .range([0, scwidth - legendWidth]);
+    .range([0, scwidth]);
 
   var y = d3.scaleLinear()
     .range([scheight, 0]);
-  var xAxis = d3.axisBottom(x)
-    .ticks(0);
+  var xAxis = d3.axisBottom(x).ticks(0).tickSize(0);
 
-  var yAxis = d3.axisLeft(y)
-    .ticks(0);
+  var yAxis = d3.axisLeft(y).ticks(0).tickSize(0);
 
   x.domain(d3.extent(data, function (d) { return d.V0; })).nice();
   y.domain(d3.extent(data, function (d) { return d.V1; })).nice();
@@ -1046,7 +1046,7 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
       .append("rect")
       .attr("width", ww)
       .attr("height", ww)
-      .attr("x", scwidth - 15)
+      .attr("x", scwidth )
       .attr("y", function (d, i) { return 20 + i * 25 - ww / 2; })
       .style("fill", function (d, i) {
         return gExpColRange(d);
@@ -1056,7 +1056,8 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
       .data(gExpertMedClass)
       .enter()
       .append("text")
-      .attr("x", scwidth)
+      .style("font-size", "12px")
+      .attr("x", scwidth+15)
       .attr("y", function (d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
       // .style("fill", function (d,i) { return gDefaultColRange(i); })
       .text(function (d) { 
@@ -1070,7 +1071,7 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
       .data(gDefaultMedClass)
       .enter()
       .append("circle")
-      .attr("cx", scwidth - 15)
+      .attr("cx", scwidth )
       .attr("cy", function (d, i) { return 320 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
       .attr("r", 7)
       .style("fill", function (d, i) {
@@ -1081,7 +1082,8 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
       .data(gDefaultMedClass)
       .enter()
       .append("text")
-      .attr("x", scwidth)
+      .style("font-size", "12px")
+      .attr("x", scwidth+15)
       .attr("y", function (d, i) { return 320 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
       // .style("fill", function (d,i) { return gDefaultColRange(i); })
       .text(function (d) {
@@ -1300,26 +1302,52 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
       });
 
 
-    svg.append("g").selectAll("mydots")
+    // svg.append("g").selectAll("mydots")
+    //   .data(gExpertMedClass)
+    //   .enter()
+    //   .append("circle")
+    //   .attr("cx", width + margin.left + 5)
+    //   .attr("cy", function (d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
+    //   .attr("r", 7)
+    //   .style("fill", function (d, i) { return gExpColRange(d); })
+
+    // svg.append("g").selectAll("mylabels")
+    //   .data(gExpertMedClass)
+    //   .enter()
+    //   .append("text")
+    //   .attr("x", width + margin.left + 12)
+    //   .attr("y", function (d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
+    //   // .style("fill", function (d,i) { return gDefaultColRange(i); })
+    //   .text(function (d) { return d })
+    //   .attr("text-anchor", "left")
+    //   .style("alignment-baseline", "middle")
+
+    var ww = 14; 
+      svg.append("g").selectAll("expLabelsRect")
       .data(gExpertMedClass)
       .enter()
-      .append("circle")
-      .attr("cx", width + margin.left + 5)
-      .attr("cy", function (d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
-      .attr("r", 7)
-      .style("fill", function (d, i) { return gExpColRange(d); })
+      .append("rect")
+      .attr("width", ww)
+      .attr("height", ww)
+      .attr("x", width + margin.left-5 )
+      .attr("y", function (d, i) { return 20 + i * 25 - ww / 2; })
+      .style("fill", function (d, i) {
+        return gExpColRange(d);
+      })
 
-    svg.append("g").selectAll("mylabels")
+      svg.append("g").selectAll("expLabels")
       .data(gExpertMedClass)
       .enter()
       .append("text")
       .attr("x", width + margin.left + 12)
       .attr("y", function (d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
       // .style("fill", function (d,i) { return gDefaultColRange(i); })
-      .text(function (d) { return d })
+      .text(function (d) { 
+          var newStr = d.replace(/ *\（[^)]*\） */g, "");
+           return newStr;  
+      })
       .attr("text-anchor", "left")
       .style("alignment-baseline", "middle")
-
 
     svg.append("g")
       .attr("class", "x axis")
@@ -1390,7 +1418,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
     var vertical = d3.select(divName)
       .append("div")
       .attr("class", "remove")
-      .style("position", "relative")
+      .style("position", "absolute")
       .style("z-index", "19")
       .style("width", "1px")
       .style("height", "380px")
@@ -1430,7 +1458,7 @@ function drawTable() {
 
     var dimensions = {};
     dimensions.width = 500;
-    dimensions.height = 1000;
+    dimensions.height = 1200;
     var width = dimensions.width + "px";
     var height = dimensions.height + "px";
     var twidth = (dimensions.width - 25) + "px";
