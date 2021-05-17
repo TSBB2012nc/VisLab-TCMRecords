@@ -386,15 +386,16 @@ function redrawAll() {
       .style('fill', '#CCC');
     // add extra info
    lensNode.append("text")
-   .text(function () { return "Vs. Patient "+ (gPatientCompare+1); })
+   .text(function () { return "VS. Patient "+ (gPatientCompare+1); })
    .style("font-size", "12px")
-   .attr("x", function () { return mousex[0]- margin.left + r; })
-   .attr("y", function () { return mousex[1]- margin.bottom - r;; });
+   .attr("x", function () { return mousex[0]- margin.left + 45; })
+   .attr("y", function () { return mousex[1]- margin.bottom -5 + r; });
 
   // remove old items
   canvas.selectAll(".magicLensDot").remove();
   canvas.selectAll(".magicLensSquare").remove();
   canvas.selectAll(".magicLensDotLabel").remove();
+  canvas.selectAll(".magicLensCurrMissMark").remove();
   // draw new items
     var node = canvas.selectAll(".magicLensDot")
        .data(pointsInLens)
@@ -416,6 +417,7 @@ function redrawAll() {
 
      })
      .attr("opacity", function (d) {
+       // if the medicine is present in the comparison view
        for (var j = 0; j < gRxAllPatientsKeys[gPatientCompare].length; j++) {
          if (d.name == gRxAllPatientsKeys[gPatientCompare][j])
            return 1;
@@ -462,6 +464,30 @@ function redrawAll() {
           }
           return 0.02;
       });
+        // Draw current not present mark
+        var xMarkNode = canvas.selectAll(".magicLensCurrMissMark");
+        xMarkNode.data(pointsInLens)
+        .enter()
+        .append("text")
+        .attr("class","magicLensCurrMissMark")
+        .text(function () { return "X"; })
+        .style("font-size", "12px")
+        .attr("x", function (d) { return d.x-5; })
+        .attr("y", function (d) { return d.y+2; })
+        // draw the X mark if the medicine is not present in the current patient's Rx
+        .attr("opacity", function (d) {
+          // check if the medicine is present
+            for (var j = 0; j < gRxAllPatientsKeys[gPatient].length; j++) {
+              if (d.name == gRxAllPatientsKeys[gPatient][j])
+                return 0;
+            }
+            for(var j = 0; j <gRxAllPatientsKeys[gPatientCompare].length;j++)
+            {
+              if (d.name == gRxAllPatientsKeys[gPatientCompare][j])
+                return 0.8;
+            }
+            return 0;
+        });
   });
 
   var allRectsSymp = context1.selectAll(".square");
@@ -1538,18 +1564,32 @@ function drawTable() {
       .key(function (d) { return d.classExp; })
       .entries(data);
 
-    for (var k = 0; k < dataByCategory.length; k++) {
-      gDefaultMedClass.push(dataByCategory[k].key);
+    if(gDefaultMedClass==[])
+    {
+      for (var k = 0; k < dataByCategory.length; k++) {
+        gDefaultMedClass.push(dataByCategory[k].key);
+      }
+       var textbookOrder = [1, 3, 9, 0, 2, 7, 6, 10, 5, 4, 8];
+       var tmpNameList1 = [];
+       for(var i = 0 ; i < textbookOrder.length; i++)
+         tmpNameList1.push(gDefaultMedClass[textbookOrder[i]]);
+       gDefaultMedClass = tmpNameList1;  
+      // sort by name
+      // gDefaultMedClass.sort(function (a, b) { return d3.ascending(a, b); });
+       //sort med property by class order
+       
     }
-    // sort by name
-    gDefaultMedClass.sort(function (a, b) { return d3.ascending(a, b); });
-
+ 
     for (var k = 0; k < dataByExpCategory.length; k++) {
       gExpertMedClass.push(dataByExpCategory[k].key);
     }
-    // sort by name
-    gExpertMedClass.sort(function (a, b) { return d3.ascending(a, b); });
-
+    // // sort by name
+    // gExpertMedClass.sort(function (a, b) { return d3.ascending(a, b); });
+    var expOrder =  [1,3,7,0,2,5,6,4];
+    var tmpNameList = [];
+    for(var i = 0 ; i < expOrder.length; i++)
+      tmpNameList.push(gExpertMedClass[expOrder[i]]);
+     gExpertMedClass = tmpNameList;  
 
     if (gDefaultMedClass.length < 15)
       gDefaultMedMajorClass = gDefaultMedClass;
@@ -1735,9 +1775,21 @@ function tcmExpColorMap() {
   // 收敛药——绿色系（酸入肝，青）
   // 消食类——黄色系列（一般入脾胃，黄）
   // 理气类——绿色系（青）
+  var className = ["凉血止血类", "安神类", "泄浊毒类", "活血类", "清热类（利湿/解毒）", "祛风止痒类", "补肾类（降蛋白尿）", "补脾益气类"];
+  var classCol = ["#ff7f00", "#fb9a99", "#b15928", "#e15759", "#b2df8a", "#d9d9d9", "#6a3d9a", "#fdbf6f"];
+  var order = [1,3,7,0,2,5,6,4];
+  var classNameOrdered = [];
+  var classColOrdered = [];
+  for(var i = 0; i < order.length; i++)
+  {
+    classNameOrdered[i] = className[order[i]];
+    classColOrdered[i] = classCol[order[i]];
+  }
   var colorMap = d3.scaleOrdinal()
-    .domain(["凉血止血", "安神类", "泄浊毒类", "活血类", "清热类（利湿/解毒）", "祛风止痒类", "补肾类（降蛋白尿）", "补脾益气类", "降蛋白尿"])
-    .range(["#ff7f00", "#fb9a99", "#b15928", "#e15759", "#b2df8a", "#d9d9d9", "#6a3d9a", "#fdbf6f", "#cab2d6"]);
+    // .domain(["凉血止血", "安神类", "泄浊毒类", "活血类", "清热类（利湿/解毒）", "祛风止痒类", "补肾类（降蛋白尿）", "补脾益气类", "降蛋白尿"])
+    // .range(["#ff7f00", "#fb9a99", "#b15928", "#e15759", "#b2df8a", "#d9d9d9", "#6a3d9a", "#fdbf6f", "#cab2d6"]);
+    .domain(classNameOrdered)
+    .range(classColOrdered);
 
   return colorMap;
 }
@@ -1759,7 +1811,18 @@ function tcmDefaultColorMap() {
   // 活血——红色（非正色）
   // 清热——绿色系列（非正色）
   // 祛湿——蓝色系列（非正色）
-
+  var className = ["止血药", "养心安神药", "泻下药", "活血祛瘀药", "清热类（清热解毒/清热利湿/清热凉血/清热通淋/清热燥湿/清热泻火）",
+    "补虚药（补气/养血/助阳/滋阴/祛风湿）", "祛湿类（化湿/利水渗湿）", "解表药", "收敛药", "消食药", "理气药"];
+  var classCol = ["#ff7f00", "#fb9a99", "#b15928", "#e15759", "#b2df8a",
+    "#6a3d9a", "#a6cee3", "#d9d9d9", "#8dd3c7", "#FFB018", "#1f77b4"];
+  var order = [1, 3, 9, 0, 2, 7, 6, 10, 5, 4, 8];
+  var classNameOrdered = [];
+  var classColOrdered = [];
+  for(var i = 0; i < order.length; i++)
+  {
+    classNameOrdered.push(className[order[i]]);
+    classColOrdered.push(classCol[order[i]]);
+  }
 
   // 祛风止痒、解表类——白色系（这两类药物辛散的特性，入肺，白）
   // 降蛋白——紫色可以
@@ -1767,10 +1830,15 @@ function tcmDefaultColorMap() {
   // 消食类——黄色系列（一般入脾胃，黄）
   // 理气类——绿色系（青）
   var colorMap = d3.scaleOrdinal()
-    .domain(["止血药", "养心安神药", "泻下药", "活血祛瘀药", "清热类（清热解毒/清热利湿/清热凉血/清热通淋/清热燥湿/清热泻火）",
-      "补虚药（补气/养血/助阳/滋阴/祛风湿）", "祛湿类（化湿/利水渗湿）", "解表药", "收敛药", "消食药", "理气药"])
-    .range(["#ff7f00", "#fb9a99", "#b15928", "#e15759", "#b2df8a",
-      "#6a3d9a", "#a6cee3", "#d9d9d9", "#8dd3c7", "#FFB018", "#1f77b4"]);
+    // .domain(["止血药", "养心安神药", "泻下药", "活血祛瘀药", "清热类（清热解毒/清热利湿/清热凉血/清热通淋/清热燥湿/清热泻火）",
+    //   "补虚药（补气/养血/助阳/滋阴/祛风湿）", "祛湿类（化湿/利水渗湿）", "解表药", "收敛药", "消食药", "理气药"])
+    // .range(["#ff7f00", "#fb9a99", "#b15928", "#e15759", "#b2df8a",
+    //   "#6a3d9a", "#a6cee3", "#d9d9d9", "#8dd3c7", "#FFB018", "#1f77b4"]);
+    .domain(classNameOrdered)
+    .range(classColOrdered);
+
+  if(gDefaultMedClass.length == 0)
+    gDefaultMedClass = classNameOrdered;
 
   return colorMap;
 }
@@ -1841,6 +1909,8 @@ function tcmVAmain() {
   }
   gDefaultColRange = tcmDefaultColorMap();
   gExpColRange = tcmExpColorMap();
+
+
   // 1.Prepare the scatterplots
   d3.csv("./newdata.csv", function (data) {
     for (var i = 0; i < data.length; i++) {
@@ -1882,9 +1952,7 @@ function tcmVAmain() {
     });
 
     //TODO: Add a button to toggle Brush mode and Lens mode!!!
-    // 3. Initialize brushes 
-    // gBrushes = d3.select("#VAcanvas").append('g')
-    //     .attr("class", "brushes");
+
     // 4. Setup lasso
     // linkedView1 = d3.select("#scSymp");//.select("svg");
     // canvas = d3.select("#scSymp");
@@ -1915,7 +1983,23 @@ function tcmVAmain() {
     .text(function (d) { return d; }) // text showed in the menu
     .attr("value", function (d) { return d; }) // corresponding value returned by the button
 
-  // mode selector
+  //////////////////////////////////////////////////////////
+  // Button behaviors
+  //////////////////////////////////////////////////////////
+  var interactMode = ['透镜','套索']
+  d3.select("#interactModeSelectButton")
+  .selectAll('interactModeOptions')
+  .data(interactMode)
+  .enter()
+  .append('option')
+  .text(function (d) { return d; }) // text showed in the menu
+  .attr("value", function (d) { return d; }) // corresponding value returned by the button
+  .property("selected", function(d){ return d === '套索'; });
+  // interactMode behavior
+  
+
+
+
   var scMode = ['四气五味', '症状'];
   var defaultOptionName = '症状';
   d3.select("#mainModeSelectButton")
@@ -1971,7 +2055,7 @@ function tcmVAmain() {
     // update(selectedOption)
   })
 
-  // X. Compare button changed
+  // Compare button changed
   var selectedSCmodeVal = d3.select("#compareModeSelectButton").property("value");
   var scData = [];
   if (selectedSCmodeVal === "症状")
@@ -2026,7 +2110,6 @@ function tcmVAmain() {
           break;
         }
       }
-
       // Clear scatterplot
       d3.select("#scCompare").remove();
       // draw scatter plots
