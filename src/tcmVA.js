@@ -31,7 +31,9 @@ var gStreamGraphSelected = null;
 var gExpColRange = [];
 var gDefaultColRange = [];
 // Patients' data
+
 var gPatient = 0;
+var gPatientVisitDate = [];
 var gPatientCompare = 0;
 var gRxFilenameList = ["medByVisitP1fixed.csv", "medByVisitP2fixed.csv", "medByVisitP3fixed.csv"];
 var gRxAllPatientsKeys = []; // record medicine used by each patient
@@ -237,7 +239,7 @@ function handleLassoEndInstance2(lassoPolygon) {
 }
 
 // reset selected points when starting a new polygon
-function handleLassoStart(lassoPolygon) {
+function handleLassoStart(_lassoPolygon) {
   updateSelectedPoints([]);
 }
 
@@ -255,7 +257,7 @@ function updateSelectedPoints(selectedPoints) {
   } else {
     points.forEach(d => {
       d.color = '#eee';
-      // Check if it's lately selected 
+      // Check if it's lately selected
       for (var i = 0; i < selectedPoints.length; i++) {
         if (d.id == selectedPoints[i].id) {
           d.brushedId = gBrushes.length - 1;
@@ -359,11 +361,11 @@ function redrawAll() {
     {
       // Mind the offest between canvas and the svg due to the margin!!!
       var pointCorrected = {};
-      pointCorrected.x = gPoints[i].x + margin.left; 
+      pointCorrected.x = gPoints[i].x + margin.left;
       pointCorrected.y = gPoints[i].y + margin.bottom;
 
 
-      var dist2 = (pointCorrected.x - mousex[0])*(pointCorrected.x - mousex[0]) + 
+      var dist2 = (pointCorrected.x - mousex[0])*(pointCorrected.x - mousex[0]) +
       (pointCorrected.y-mousex[1])*(pointCorrected.y-mousex[1]);
 
       if(dist2 <= r2)
@@ -376,12 +378,12 @@ function redrawAll() {
     canvas.selectAll(".lens").remove();
     var lensNode = canvas.append("g")
       .attr("class", "lens");
-    
+
     lensNode.append("circle")
       .attr("r", r)
       .attr("opacity", 0.8)
       .attr("cx", function () { return mousex[0]- margin.left;  }) //;
-      .attr("cy", function () { return mousex[1]- margin.bottom;}) //- margin.bottom; 
+      .attr("cy", function () { return mousex[1]- margin.bottom;}) //- margin.bottom;
       .style('stroke', '#AAA')
       .style('fill', '#CCC');
     // add extra info
@@ -571,7 +573,7 @@ function redrawAll() {
   const context3 = d3.select("#streamGraph");
   var bands = context3.selectAll(".layer");
   bands.attr("class", "layer")
-    .style("fill", function (d, i) {
+    .style("fill", function (d, _i) {
       // for(var j = 0; j < gStreamBandColors.length; j++){
       //   if(d.key == gStreamBandColors[j].name)
       //     return gStreamBandColors[j].color;
@@ -651,10 +653,12 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
       "translate(" + margin.left + "," + margin.top + ")");
 
   // Get the data
-  d3.csv(csvName, function (error, data) {
+  gPatientVisitDate = [];
+  d3.csv(csvName, function (_error, data) {
     data.forEach(function (d) {
       d.date = (d.date);
-
+      if (gPatientVisitDate.indexOf(d.date) == -1)
+        gPatientVisitDate.push(d.date);
       d.visit = +d.visit;
       if (d.v0 == "x") {
         d.v0 = NaN;
@@ -703,7 +707,7 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
       .x(d => x(d.visit))
       .y(d => y0(d.dbp));
     }
-  
+
     // Scale the range of the data
     // x.domain(d3.extent(data, function (d) { return d.date; }));
     x.domain(d3.extent(data, function (d) { return d.visit; }));
@@ -714,7 +718,7 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
       })]);
       y1.domain([0, d3.max(data, function (d) {
         return Math.max(d.v1);
-      })]);  
+      })]);
     }else{
 
       y0.domain([0, d3.max(data, function (d) {
@@ -722,11 +726,15 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
       })]);
     }
 
-    var xAxis = d3.axisBottom(x).ticks(20)
-    .tickFormat(function(d, i){ 
+    var xAxis = d3.axisBottom(x)
+    // .ticks(function(_d,_i){
+    //   console.log(data.length);
+    //   return data.length;})
+    .ticks(30)
+    .tickFormat(function(_d, i){
       var date = data[i].date;
       // console.log(date);
-      return date; 
+      return date;
     });
     // svg.append("path")        // Add the valueline path.
     //   .attr("d", valueline(data))
@@ -843,13 +851,19 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
         .attr("cx", function (d) { return x(d.visit); })
         .attr("cy", function (d) { return y0(d.dbp); })
     }
-    
+
     svg.append("g")            // Add the X Axis
       .attr("class", "x axis")
       .attr("transform", "translate(0," + height + ")")
       .style("fill", "none")
       .call(xAxis)
-     
+      .selectAll("text")
+      .attr("y", 0)
+      .attr("x", 9)
+      .attr("dy", ".7em")
+      .attr("transform", "rotate(15)")
+      .style("text-anchor", "start");
+
     ////
     // svg.append("text")
     //   .attr("transform",
@@ -863,7 +877,7 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
       .style("stroke", "steelblue")
       .style("fill", "none")
       .call(yAxisLeft);
-    ////    
+    ////
     if(!isPulse)
     {
       svg.append("text")
@@ -874,7 +888,7 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
       .style("text-anchor", "middle")
       .style("font-size", "12px")
       .text(function(){
-       if(gPatient == 0) 
+       if(gPatient == 0)
         return "蛋白尿g/L";
        else
         return "蛋白尿mg/24h";
@@ -888,7 +902,7 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
         .style("fill", "none")
         .style("stroke", "#FFB018")
         .call(yAxisRight);
-  
+
        svg.append("text")
         .attr("transform", "rotate(-90)")
         .attr("y", margin.left + 1300)
@@ -911,7 +925,7 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
       .text("血压 mmHg");
     }
 
-   
+
 
     // svg.append("g").selectAll("expLabels")
     // .data(gExpertMedClass)
@@ -922,7 +936,7 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
     // // .style("fill", function (d,i) { return gDefaultColRange(i); })
     // .text(function (d) { return d })
     // .attr("text-anchor", "left")
-    // .style("alignment-baseline", "middle")  
+    // .style("alignment-baseline", "middle")
 
 
   });
@@ -939,11 +953,16 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
     .attr("width", scwidth + margin.left + margin.right + legendWidth)
     .attr("height", scheight + margin.top + margin.bottom)
     .append("g")
-    .attr('class', function(){ 
+    .attr('class', function(){
       var canv = scSvgName+"_canvas";
       return canv;
     })
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    .attr("transform", function(){
+      if (scSvgName != "scSymp")
+        return "translate(" + margin.left + "," + margin.top + ")";
+      else
+        return "translate(15,"+margin.top+")";
+      });
 
   var x = d3.scaleLinear()
     // .range([0, scwidth - legendWidth]);
@@ -952,8 +971,11 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
   var y = d3.scaleLinear()
     .range([scheight, 0]);
   var xAxis = d3.axisBottom(x).ticks(0).tickSize(0);
+  var xAxis2 = d3.axisTop(x).ticks(0).tickSize(0);
 
   var yAxis = d3.axisLeft(y).ticks(0).tickSize(0);
+  var yAxis2 = d3.axisRight(y).ticks(0).tickSize(0);
+
 
   x.domain(d3.extent(data, function (d) { return d.V0; })).nice();
   y.domain(d3.extent(data, function (d) { return d.V1; })).nice();
@@ -961,6 +983,7 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
   scSvg.append("g")
     .attr("class", "x axis")
     .attr("transform", "translate(0," + scheight + ")")
+    .attr("opacity", 0.1)
     .call(xAxis)
     .append("text")
     .attr("class", "label")
@@ -970,7 +993,14 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
     .text("V0");
 
   scSvg.append("g")
+    .attr("class", "x axis")
+    .attr("opacity", 0.1)
+    .attr("transform", "translate(0, 0)")
+    .call(xAxis2);
+
+  scSvg.append("g")
     .attr("class", "y axis")
+    .attr("opacity", 0.1)
     .call(yAxis)
     .append("text")
     .attr("class", "label")
@@ -980,6 +1010,11 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
     .style("text-anchor", "end")
     .text("V1");
 
+  scSvg.append("g")
+    .attr("class", "y axis")
+    .attr("opacity", 0.1)
+    .attr("transform", "translate(" + (scwidth) + ",0)")
+    .call(yAxis2);
 
 
   var node = scSvg.selectAll(".dot")
@@ -1072,9 +1107,9 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
       .append("rect")
       .attr("width", ww)
       .attr("height", ww)
-      .attr("x", scwidth )
-      .attr("y", function (d, i) { return 20 + i * 25 - ww / 2; })
-      .style("fill", function (d, i) {
+      .attr("x", scwidth + 20)
+      .attr("y", function (_d, i) { return 20 + i * 25 - ww / 2; })
+      .style("fill", function (d, _i) {
         return gExpColRange(d);
       })
 
@@ -1083,12 +1118,12 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
       .enter()
       .append("text")
       .style("font-size", "12px")
-      .attr("x", scwidth+15)
-      .attr("y", function (d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
+      .attr("x", scwidth+35)
+      .attr("y", function (_d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
       // .style("fill", function (d,i) { return gDefaultColRange(i); })
-      .text(function (d) { 
+      .text(function (d) {
           var newStr = d.replace(/ *\（[^)]*\） */g, "");
-           return newStr;  
+           return newStr;
       })
       .attr("text-anchor", "left")
       .style("alignment-baseline", "middle")
@@ -1097,10 +1132,10 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
       .data(gDefaultMedClass)
       .enter()
       .append("circle")
-      .attr("cx", scwidth )
-      .attr("cy", function (d, i) { return 320 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
+      .attr("cx", scwidth+ 20 )
+      .attr("cy", function (_d, i) { return 320 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
       .attr("r", 7)
-      .style("fill", function (d, i) {
+      .style("fill", function (d, _i) {
         return gDefaultColRange(d);
       })
 
@@ -1109,8 +1144,8 @@ function drawSConDiv(data, scSvgName, divName, scwidth, scheight) {
       .enter()
       .append("text")
       .style("font-size", "12px")
-      .attr("x", scwidth+15)
-      .attr("y", function (d, i) { return 320 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
+      .attr("x", scwidth+35)
+      .attr("y", function (_d, i) { return 320 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
       // .style("fill", function (d,i) { return gDefaultColRange(i); })
       .text(function (d) {
         var newStr = d.replace(/ *\（[^)]*\） */g, "");
@@ -1215,12 +1250,13 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
     var maxTimeSteps = -1;
     var allDates = [];
     var totalVisits = 0;
-    data.forEach(function (d, i) {
+    data.forEach(function (d, _i) {
       // we have to sort the datum by class here
 
       d.date = parseDate(d.date);
       d.value = +d.value;
       d.visit = +d.visit;
+
       totalVisits = Math.max(d.visit, totalVisits);
     });
     // transform data to a matrix (rows: date, columns: keys)
@@ -1304,7 +1340,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
         {
           loc.x.push(t);
           loc.y0.push(thisLayer[t][0]);
-          loc.y1.push(thisLayer[t][1]);          
+          loc.y1.push(thisLayer[t][1]);
         }
       }
       loc.hStd = math.std(hlist);
@@ -1318,13 +1354,13 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
       .attr("class", "layer")
       .attr("d", d3.area()
         .curve(d3.curveBasis)
-        .x(function (d, i) { return x(d.data.visit); })
-        .y0(function (d,i) { 
+        .x(function (d, _i) { return x(d.data.visit); })
+        .y0(function (d,_i) {
           return y(d[0]); })
-        .y1(function (d,i) { 
+        .y1(function (d,_i) {
           return y(d[1]); })
       )
-      .style("fill", function (d, i) {
+      .style("fill", function (d, _i) {
         var medClass = -1;
         for (var ii = 0; ii < gMedProperties.length; ii++) {
           if (d.key == gMedProperties[ii].name) {
@@ -1344,7 +1380,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
           return "blue";
         else
         {
-          // return gDefaultColRange(medClass); 
+          // return gDefaultColRange(medClass);
           var color = gExpColRange(gExpertMedClass[medClass]);
           var labC = d3.lab(color);
           if(labC.l > 50)
@@ -1363,7 +1399,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
     for(var ii = 0; ii < maxYloc.length; ii++)
     {
        var randX = 0;
-       var locInfo = maxYloc[ii];  
+       var locInfo = maxYloc[ii];
       var xBest = 0;
       var yBest = 0;
       if(locInfo.hMed + delta < locInfo.h)
@@ -1371,7 +1407,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
         var randInd = Math.round(math.random(0, locInfo.x.length-1));
         var randMaxX = locInfo.x[randInd];
         xBest = x(randMaxX) + math.random(0,5);
-        yBest = 0.5 * (y(locInfo.y0[randInd]) + y(locInfo.y1[randInd]));// + math.random(0,5); 
+        yBest = 0.5 * (y(locInfo.y0[randInd]) + y(locInfo.y1[randInd]));// + math.random(0,5);
       }
       else
       {
@@ -1388,26 +1424,26 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
     var textnode = svg.selectAll("text").data(textLoc)
       .enter()
       .append("text")
-      .text(function (d,i) { return layers[i].key; })
+      .text(function (_d,i) { return layers[i].key; })
       .style("font-size", "11px")
-      .style("fill",function(d,i){return layerTextCol[i];})
+      .style("fill",function(_d,i){return layerTextCol[i];})
       .attr("x", function (d) {
         return d.x;
         // randX = Math.random() * (width - 20);//(totalVisits-1));
-        // return randX; //x(randVisit); 
+        // return randX; //x(randVisit);
         // if(d.h > maxYloc.mean + maxYloc.std)
 
-       
+
         // else
         //   randX = Math.random()
       })
       // .attr("y", function (d) { return 0.5 * (y(d[0])+y(d[1])); });
-      .attr("y", function (d, i) {
-        return d.y;  
-      
+      .attr("y", function (d, _i) {
+        return d.y;
+
       });
 
-    var ww = 14; 
+    var ww = 14;
       svg.append("g").selectAll("expLabelsRect")
       .data(gExpertMedClass)
       .enter()
@@ -1415,8 +1451,8 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
       .attr("width", ww)
       .attr("height", ww)
       .attr("x", width + margin.left-5 )
-      .attr("y", function (d, i) { return 20 + i * 25 - ww / 2; })
-      .style("fill", function (d, i) {
+      .attr("y", function (_d, i) { return 20 + i * 25 - ww / 2; })
+      .style("fill", function (d, _i) {
         return gExpColRange(d);
       })
 
@@ -1425,20 +1461,37 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
       .enter()
       .append("text")
       .attr("x", width + margin.left + 12)
-      .attr("y", function (d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
+      .attr("y", function (_d, i) { return 20 + i * 25; }) // 100 is where the first dot appears. 25 is the distance between dots
       // .style("fill", function (d,i) { return gDefaultColRange(i); })
-      .text(function (d) { 
+      .text(function (d) {
           var newStr = d.replace(/ *\（[^)]*\） */g, "");
-           return newStr;  
+           return newStr;
       })
       .attr("text-anchor", "left")
       .style("alignment-baseline", "middle")
 
+    xAxis.tickFormat(function(i){
+      if(gPatientVisitDate.length > 0)
+      {
+        var date = gPatientVisitDate[i];
+        // // console.log(date);
+        // return i +"\r\n("+date+")";
+        return date;
+
+      }
+      // return i;
+    });
     svg.append("g")
       .attr("class", "x axis")
       //  .attr("transform", "translate(0," + height + ")")
        .attr("transform", "translate(0," + height + ")")
-      .call(xAxis);
+      .call(xAxis)
+      .selectAll("text")
+      .attr("y", 0)
+      .attr("x", 9)
+      .attr("dy", ".7em")
+      .attr("transform", "rotate(15)")
+      .style("text-anchor", "start");;
 
     svg.append("g")
       .attr("class", "y axis")
@@ -1451,21 +1504,21 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
 
     svg.selectAll(".layer")
       .attr("opacity", 1)
-      .on("mouseover", function (d, i) {
+      .on("mouseover", function (_d, i) {
         svg.selectAll(".layer").transition()
           .duration(250)
-          .attr("opacity", function (d, j) {
+          .attr("opacity", function (_d, j) {
             return j != i ? 0.4 : 1;
           })
       })
-      .on("mousemove", function (d, i) {
+      .on("mousemove", function (d, _i) {
         mousex = d3.mouse(this);
         mousex = mousex[0];
         var invertedx = Math.round(x.invert(mousex));
         // invertedx = invertedx.getMonth() + invertedx.getDate();
         var selected = (d[invertedx].data);
         // set global variable to update other views
-   
+
         //   console.log(selected);
         // for (var k = 0; k < selected.length; k++) {
         //   datearray[k] = selected[k].visit
@@ -1474,7 +1527,7 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
         mousedate = selected.visit;
         // mousedate = datearray.indexOf(invertedx);
         pro = selected[d.key];//d.data[mousedate].value;
-        gStreamGraphSelected = d.key; 
+        gStreamGraphSelected = d.key;
         d3.select(this)
           .classed("hover", true)
           .attr("stroke", strokecolor)
@@ -1484,23 +1537,23 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
           redrawAll();
 
       })
-      .on("mouseout", function (d, i) {
+      .on("mouseout", function (d, _i) {
         svg.selectAll(".layer")
           .transition()
           .duration(250)
           .attr("opacity", "1");
-        
+
         d3.select(this)
           .classed("hover", false)
           .attr("stroke-width", "0px"), tooltip.html("<p>" + d.key + "<br>" + pro + "</p>").style("visibility", "hidden");
-        if( gStreamGraphSelected != null ) 
+        if( gStreamGraphSelected != null )
         {
           gStreamGraphSelected = null;
           redrawAll();
         }
       })
 
-    // // The vertical slice line 
+    // // The vertical slice line
     // var vertical = d3.select(divName)
     //   .append("div")
     //   .attr("class", "remove")
@@ -1573,13 +1626,13 @@ function drawTable() {
        var tmpNameList1 = [];
        for(var i = 0 ; i < textbookOrder.length; i++)
          tmpNameList1.push(gDefaultMedClass[textbookOrder[i]]);
-       gDefaultMedClass = tmpNameList1;  
+       gDefaultMedClass = tmpNameList1;
       // sort by name
       // gDefaultMedClass.sort(function (a, b) { return d3.ascending(a, b); });
        //sort med property by class order
-       
+
     }
- 
+
     for (var k = 0; k < dataByExpCategory.length; k++) {
       gExpertMedClass.push(dataByExpCategory[k].key);
     }
@@ -1589,7 +1642,7 @@ function drawTable() {
     var tmpNameList = [];
     for(var i = 0 ; i < expOrder.length; i++)
       tmpNameList.push(gExpertMedClass[expOrder[i]]);
-     gExpertMedClass = tmpNameList;  
+     gExpertMedClass = tmpNameList;
 
     if (gDefaultMedClass.length < 15)
       gDefaultMedMajorClass = gDefaultMedClass;
@@ -1634,7 +1687,7 @@ function convertPatientRxData(csvpath) {
     var parseDate = d3.timeParse("%Y年%M月%Y日");
     var nest = d3.nest()
       .key(function (d) { return d.key; });
-    data.forEach(function (d, i) {
+    data.forEach(function (d, _i) {
       d.date = parseDate(d.date);
       d.value = +d.value;
       d.visit = +d.visit;
@@ -1716,7 +1769,7 @@ function preprocessAllRx() {
       var maxTimeSteps = -1;
       var allDates = [];
       var totalVisits = 0;
-      data.forEach(function (d, i) {
+      data.forEach(function (d, _i) {
         // we have to sort the datum by class here
 
         d.date = parseDate(d.date);
@@ -1843,8 +1896,8 @@ function tcmDefaultColorMap() {
   return colorMap;
 }
 
-// A lens that allows to compare 
-function magicLens(r, scSvg) {
+// A lens that allows to compare
+function magicLens(r, _scSvg) {
   // mouse location
   mousex = d3.mouse(this);
   // draw items within the lens area
@@ -1996,7 +2049,7 @@ function tcmVAmain() {
   .attr("value", function (d) { return d; }) // corresponding value returned by the button
   .property("selected", function(d){ return d === '套索'; });
   // interactMode behavior
-  
+
 
 
 
@@ -2021,14 +2074,14 @@ function tcmVAmain() {
     .attr("value", function (d) { return d; }) // corresponding value returned by the button
     .property("selected", function(d){ return d === '四气五味'; });
 
-  // draw streamgraph with the patient
-  drawStreamGraph(gRxFilenameList[gPatient], "#streamGraph", g_sgwidth, g_sgheight);
   // draw line charts
   drawLinecharts(gTestFilenameList[gPatient], "#lineCharts", g_sgwidth, 100);
   drawLinecharts(gTestFilenameList[gPatient], "#lineCharts", g_sgwidth, 100, true);
 
+  // draw streamgraph with the patient
+  drawStreamGraph(gRxFilenameList[gPatient], "#streamGraph", g_sgwidth, g_sgheight);
   // When the button is changed, run the updateChart function
-  d3.select("#selectButton").on("change", function (d) {
+  d3.select("#selectButton").on("change", function (_d) {
     // recover the option that has been chosen
     var selectedOption = d3.select(this).property("value")
     // run the updateChart function with this selected option
@@ -2036,9 +2089,6 @@ function tcmVAmain() {
     // gPatient = 2;
     var RxDataName = selectedOption;
     if (RxDataName != gRxFilenameList[gPatient]) {
-      // Clear stream graph
-      d3.select("#streamGraph").selectAll("svg").remove();
-      drawStreamGraph(RxDataName, "#streamGraph", g_sgwidth, g_sgheight);
 
       for (var i = 0; i < gRxFilenameList.length; i++) {
         if (RxDataName === gRxFilenameList[i]) {
@@ -2051,6 +2101,12 @@ function tcmVAmain() {
       // draw a line chart
       drawLinecharts(gTestFilenameList[gPatient], "#lineCharts", g_sgwidth, 100);
       drawLinecharts(gTestFilenameList[gPatient], "#lineCharts", g_sgwidth, 100, true);
+
+
+      // Clear stream graph
+      d3.select("#streamGraph").selectAll("svg").remove();
+      drawStreamGraph(RxDataName, "#streamGraph", g_sgwidth, g_sgheight);
+
     }
     // update(selectedOption)
   })
@@ -2063,7 +2119,7 @@ function tcmVAmain() {
   else
     scData = gSqwwData;
 
-  d3.select("#compareModeSelectButton").on("change", function (d) {
+  d3.select("#compareModeSelectButton").on("change", function (_d) {
     var selectedOption = d3.select(this).property("value")
 
     if (selectedOption === "症状") {
@@ -2080,7 +2136,7 @@ function tcmVAmain() {
   });
 
   // Main mode
-  d3.select("#mainModeSelectButton").on("change", function (d) {
+  d3.select("#mainModeSelectButton").on("change", function (_d) {
     var selectedOption = d3.select(this).property("value")
     var mainscData = [];
     if (selectedOption === "症状") {
@@ -2099,11 +2155,11 @@ function tcmVAmain() {
   });
 
   // When the button is changed, run the updateChart function
-  d3.select("#compareSelectButton").on("change", function (d) {
+  d3.select("#compareSelectButton").on("change", function (_d) {
     var selectedOption = d3.select(this).property("value")
     var RxDataName = selectedOption;
     if (RxDataName != gRxFilenameList[gPatientCompare]) {
-      // Clear stream graph   
+      // Clear stream graph
       for (var i = 0; i < gRxFilenameList.length; i++) {
         if (RxDataName === gRxFilenameList[i]) {
           gPatientCompare = i;
