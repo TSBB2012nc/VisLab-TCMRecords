@@ -624,7 +624,7 @@ function lassoFunctionInstance2(interactionSvg) {
 
 // Draw linecharts
 function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
-  var margin = { top: 5, right: 40, bottom: 20, left: 50 };
+  var margin = { top: 5, right: 40, bottom: 25, left: 50 };
   // var parseDate = d3.time.format("%d-%b-%y").parse;
   var parseDate = d3.timeParse("%d-%b-%y");
 
@@ -730,12 +730,20 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
     // .ticks(function(_d,_i){
     //   console.log(data.length);
     //   return data.length;})
-    .ticks(30)
     .tickFormat(function(_d, i){
       var date = data[i].date;
       // console.log(date);
       return date;
     });
+
+    if (data.length >= 30)
+      xAxis.ticks(30);
+    else if (data.length >= 20)
+      xAxis.ticks(20);
+    else if (data.length >= 10)
+      xAxis.ticks(10);
+    else
+      xAxis.ticks(5);
     // svg.append("path")        // Add the valueline path.
     //   .attr("d", valueline(data))
     //   .attr("stroke", "steelblue")
@@ -858,8 +866,8 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
       .style("fill", "none")
       .call(xAxis)
       .selectAll("text")
-      .attr("y", 0)
-      .attr("x", 9)
+      .attr("y", 8)
+      .attr("x", -20)
       .attr("dy", ".7em")
       .attr("transform", "rotate(15)")
       .style("text-anchor", "start");
@@ -907,7 +915,7 @@ function drawLinecharts(csvName, divName, sgWidth, sgHeight, isPulse = false) {
         .attr("transform", "rotate(-90)")
         .attr("y", margin.left + 1300)
         .attr("x", 0 - (0.7 * height))
-        .attr("dy", "1em")
+        .attr("dy", "0.5em")
         .style("font-size", "12px")
         .style("text-anchor", "middle")
         .text("血肌酐 umol/L");
@@ -1216,8 +1224,9 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
 
   var z = d3.scaleOrdinal()
     .range(colorrange);
-  var xAxis = d3.axisBottom(x)
-    .ticks(20);
+  var xAxis = d3.axisBottom(x);
+ 
+  // .ticks(20);
   // .ticks(function(d){return d.visit;});
 
   var yAxis = d3.axisLeft(y)
@@ -1470,6 +1479,15 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
       .attr("text-anchor", "left")
       .style("alignment-baseline", "middle")
 
+    if (gPatientVisitDate.length >= 30)
+      xAxis.ticks(30);
+    else if (gPatientVisitDate.length >= 20)
+      xAxis.ticks(20);
+    else if (gPatientVisitDate.length >= 10)
+      xAxis.ticks(10);
+    else
+      xAxis.ticks(5);
+
     xAxis.tickFormat(function(i){
       if(gPatientVisitDate.length > 0)
       {
@@ -1487,8 +1505,8 @@ function streamChart(csvpath, color, divName, sgWidth, sgHeight) {
        .attr("transform", "translate(0," + height + ")")
       .call(xAxis)
       .selectAll("text")
-      .attr("y", 0)
-      .attr("x", 9)
+      .attr("y", 8)
+      .attr("x", -20)
       .attr("dy", ".7em")
       .attr("transform", "rotate(15)")
       .style("text-anchor", "start");;
