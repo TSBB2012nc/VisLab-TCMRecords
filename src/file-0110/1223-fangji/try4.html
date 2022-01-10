@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>New Order - Discography</title>
+<style>
+
+.node {
+  fill: #ddd;
+  stroke: #fff;
+}
+
+.label {
+  font: 15px sans-serif;
+  text-anchor: middle;
+}
+
+</style>
+<body>
+	<h1>补益剂方剂树图</h1>
+	<div id="chart"></div>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script>
+
+// var width = 960,
+//     height = 500;
+var width = 1000, height = 500,
+ x = d3.scale.linear().range([0, width]),
+ y = d3.scale.linear().range([0, height]);
+
+var color = d3.scale.category20();
+// var color = d3.scaleLinear()
+//       .range(["white", "#69b3a2"])
+//       .domain([1,100])
+
+
+var svg = d3.select("#chart").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+var partition = d3.layout.partition()
+    .size([width, height])
+    .value(function(d) { return d.size; });
+
+
+    var tooltip = d3.select("#chart")
+        .append("div")
+        .style("opacity", 0)
+        .attr("class", "tooltip")
+        
+        .style("background-color", "white")
+        .style("border", "solid")
+        .style("border-width", "2px")
+        .style("width","1000px")
+        .style("border-radius", "5px")
+        .style("padding", "5px")
+
+    
+    
+
+    var mouseover = function(d) {
+        tooltip.style("opacity", 1)
+      }
+      var mousemove = function(d) {
+        tooltip
+          .html("可能的方剂为: " + d.fangji)
+          .style("left", (d3.mouse(this)[0]+70) + "px")
+          .style("top", (d3.mouse(this)[1]) + "px")
+      }
+      var mouseleave = function(d) {
+        tooltip.style("opacity", 0)
+      }
+
+
+d3.json("singles_tree4.json", function(error, root) {
+  var nodes = partition.nodes(root);
+  var links = partition.links(nodes)
+  console.log(nodes)
+  svg.selectAll(".node")
+      .data(nodes)
+      .enter().append("rect")
+      .on("mouseover", mouseover)
+      .on("mousemove", mousemove)
+      .on("mouseleave", mouseleave)
+      .attr("class", "node")
+      .attr("x", function(d) { return d.x; })
+      .attr("y", function(d) { return d.y; })
+      .attr("width", function(d) { return d.dx; })
+      .attr("height", function(d) { return d.dy; })
+      //.style("fill", function(d) { return color((d.children ? d : d.parent).name); });
+
+      .style("fill", function(d) { return color(d.name); })
+      
+
+  svg.selectAll(".label")
+      .data(nodes.filter(function(d) { return d.dx > 6; }))
+      .enter().append("text")
+      .attr("class", "label")
+      .attr("dy", ".35em")
+      // .attr("transform", function(d) { return "translate(" + (d.x + d.dx / 2) + "," + (d.y + d.dy / 2) + ")rotate(90)"; })
+      .attr("transform", function(d) { return "translate(" + (d.x + d.dx / 2) + "," + (d.y + d.dy / 2) + ")"; })
+      .text(function(d) { return d.name; });
+
+
+
+  
+});
+
+</script>
