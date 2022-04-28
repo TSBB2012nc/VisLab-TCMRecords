@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Transform Transitions</title>
+<style>
+
+body {
+  margin: 0;
+}
+
+rect {
+  stroke: #fff;
+  stroke-width: .1px;
+}
+
+</style>
+<body>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script>
+
+var w = 512,
+    h = 512,
+    z = 4,
+    x = w / z,
+    y = h / z;
+
+var svg = d3.select("body").append("svg")
+    .attr("width", w)
+    .attr("height", h);
+d3.csv("colormaprgbl.csv", function(error, data) {
+
+    svg.selectAll("rect")
+    .data(d3.range(x * y))
+  .enter().append("rect")
+    .attr("transform", translate)
+    .attr("width", z)
+    .attr("height", z)
+    
+    
+
+    svg.selectAll("rect")
+    .data(data)
+    .style("fill", function(d) { return d.rgb})
+    .append("title")
+	.text(function (d) { return d.label});
+
+function translate(d) {
+  return "translate(" + (d % x) * z + "," + Math.floor(d / x) * z + ")";
+}
+
+})
+
+</script>
