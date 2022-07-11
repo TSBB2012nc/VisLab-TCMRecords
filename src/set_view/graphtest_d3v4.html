@@ -4,7 +4,9 @@
 <head>
   <meta charset="utf-8">
   <link rel="stylesheet" href="css/style.css">
-  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script src="d3.v4.min.js"></script>
+  <script src="d3-color.min.js"></script>
+  <script src="d3-scale-chromatic.min.js"></script>
   <script type="text/javascript" src="forceInABox.js"></script>  
   <title>Two cool ways to visualize Network Data using D3.js V4</title>
 </head>
@@ -95,8 +97,9 @@ var margin = {top: 150, right: 0, bottom: 0, left: 150},
     height = 510;
 
 var x = d3.scaleBand().rangeRound([0, width]),
-    z = d3.scaleLinear().domain([0, 2]).clamp(true),
-    c = d3.scaleOrdinal(d3.schemeCategory10).domain(d3.range(10));
+    z = d3.scaleLinear().domain([0, 5]).clamp(true);
+// var  colmap = d3.scaleOrdinal(d3.schemeCategory10).domain(d3.range(10));
+var  colmap = d3.scaleOrdinal(d3.schemeBlues[6]).domain(d3.range(10));
     
 var svg02 = d3.select("#chart02").append("svg")
     .attr("id", "svg02")
@@ -136,9 +139,9 @@ function createGraphs() {
         .attr('y', ((parseFloat(d3.select('#legend01').style('height')) - (groups.length * 22)) / 2) + (i * 22))
         .attr('width', 18)                          
         .attr('height', 18)                         
-        .style('fill', function() { return c(d.key); })                               
+        .style('fill', function() { return colmap(d.key); })                               
         .style("fill-opacity", 0.7)
-        .style('stroke', function() { return c(d.key); });                               
+        .style('stroke', function() { return colmap(d.key); });                               
         
       legend01.append('text') 
         .attr('x', 60)              
@@ -146,20 +149,20 @@ function createGraphs() {
         .attr("class", "legend")
         .text( d.key );
         
-      legend02.append('rect')                                     
-        .attr('x', 60 )
-        .attr('y', ((parseFloat(d3.select('#legend02').style('height')) - (groups.length * 22)) / 2) + (i * 22))
-        .attr('width', 18)                          
-        .attr('height', 18)                         
-        .style('fill', function() { return c(d.key); })                               
-        .style("fill-opacity", 0.7)
-        .style('stroke', function() { return c(d.key); });            
+      // legend02.append('rect')                                     
+      //   .attr('x', 60 )
+      //   .attr('y', ((parseFloat(d3.select('#legend02').style('height')) - (groups.length * 22)) / 2) + (i * 22))
+      //   .attr('width', 18)                          
+      //   .attr('height', 18)                         
+      //   .style('fill', function() { return colmap(d.key); })                               
+      //   .style("fill-opacity", 0.7)
+      //   .style('stroke', function() { return colmap(d.key); });            
               
-      legend02.append('text') 
-        .attr('x', 85)
-        .attr('y', ((parseFloat(d3.select('#legend02').style('height')) - (groups.length * 22)) / 2) + 14 + (i * 22))
-        .attr("class", "legend")
-        .text( d.key );
+      // legend02.append('text') 
+      //   .attr('x', 85)
+      //   .attr('y', ((parseFloat(d3.select('#legend02').style('height')) - (groups.length * 22)) / 2) + 14 + (i * 22))
+      //   .attr("class", "legend")
+      //   .text( d.key );
       
     });
 
@@ -181,7 +184,7 @@ function createGraphs() {
             var set = [];
             set.drugArray = [];
             set.id = d.setId;
-            for(i=1; i < setCols-1; i++){
+            for(var i=1; i < setCols-1; i++){
                 console.log(d[colNames[i]]);
                 if(d[colNames[i]] === undefined )
                     continue;
@@ -196,32 +199,45 @@ function createGraphs() {
         console.log(gsetData);
     
         setIntersects = [];
-        for(ii=0; ii<setRows;ii++)
+        var maxCardi = -1;
+        var minCardi = 1;
+        for(var ii=0; ii<setRows;ii++)
         {
             setIntersects[ii] = [];
-            for(jj = 0; jj < setRows; jj++){
+            for(var jj = 0; jj < setRows; jj++){
                 
                 var dArray1 = gsetData[ii].drugArray;
                 var dArray2 = gsetData[jj].drugArray;
                 var coOccur = 0;
-                for(c = 0; c < dArray1.length; c++){
-                    for(c2 = 0; c2 < dArray2.length; c2++)
+                for(var c = 0; c < dArray1.length; c++){
+                    for(var c2 = 0; c2 < dArray2.length; c2++)
                         {
-                            if(dArray1[c] == dArray2[c2])
-                                coOccur ++;
+                        if (c == c2)
+                          continue;
+                        if(dArray1[c] == dArray2[c2])
+                            coOccur ++;
                         }
                 }
                 setIntersects[ii][jj] = {val:coOccur, x:jj};
+                if( coOccur > maxCardi) 
+                   maxCardi = coOccur;
+                if( coOccur < minCardi)
+                  minCardi = coOccur;
+                // minCardi = min(coOccur, minCardi);
             }
         }
         console.log(setIntersects);
-
-      // var setnameArray = [];
-      // setnameArray()
-      const x = d3.scaleBand()
-					.range([ 0, width-50])
-					.domain([0,setNames.length-1])
-					.padding(0.05);
+        console.log(maxCardi);
+        console.log(minCardi);
+        
+       var indexArray = [];
+       indexArray = setNames.map(function(d,i) {return i;});
+      //  console.log(indexArray);
+       
+				x.domain(indexArray);
+      console.log(x.bandwidth());
+      console.log(x(0));
+      console.log(x(1));
       svg02.append("rect")
           .attr("class", "background")
           .attr("width", width)
@@ -260,16 +276,51 @@ function createGraphs() {
           .attr("text-anchor", "start")
           .text(function(d, i) { return gsetData[i].id; });
 
-          function row(row) {
+      function row(row) {
         var cell = d3.select(this).selectAll(".cellAM")
-            .data(row.filter(function(d) { return d.val; }))
+          .data(row.filter(function (d) { return d.val; }))
           .enter().append("rect")
-            .attr("class", "cellAM")
-            .attr("x", function(d) { return x(d.x); })
-            .attr("width", x.bandwidth())
-            .attr("height", x.bandwidth())
-            .style("fill-opacity", function(d) { return z(d.val); });
+          .attr("class", "cellAM")
+          .attr("x", function (d) { return x(d.x); })
+          .attr("width", x.bandwidth())
+          .attr("height", x.bandwidth())
+          .style("fill-opacity", function (d) { return z(d.val); })
+          .style("fill", function (d) { return colmap(d.val); }) 
+          .on("mouseover", mouseover)
+          .on("mouseout", mouseout);
       }
+
+      function mouseover(p) {
+        d3.selectAll(".row text").classed("active", function (d, i) { return i == p.y; });
+        d3.selectAll(".column text").classed("active", function (d, i) { return i == p.x; });
+      }
+
+      function mouseout() {
+        d3.selectAll("text").classed("active", false);
+      }
+
+      var cardiNums = d3.range(0,maxCardi+1);
+      console.log(cardiNums);
+      for(var i = 0; i < cardiNums.length; i++){
+        legend02.append('rect')                         
+        .attr('x', 60 )
+        .attr('y', ((parseFloat(d3.select('#legend02').style('height')) - (maxCardi * 22)) / 2) + (i * 22))
+        .attr('width', 18)                          
+        .attr('height', 18)                         
+        .style('fill', function() { return colmap(cardiNums[i]); })                               
+        .style("fill-opacity", 0.7)
+        .style('stroke', function() { return colmap(cardiNums[i]); });            
+              
+      legend02
+        .append('text') 
+        .attr('x', 85)
+        .attr('y', ((parseFloat(d3.select('#legend02').style('height')) - (maxCardi * 22)) / 2) + 14 + (i * 22))
+        // .attr('y', ((parseFloat(d3.select('#legend02').style('height')) - (maxCardi * 22)) / 2) + 14 + (i * 22))
+        .attr("class", "legend")
+        .text( cardiNums[i] );
+      }
+   
+
     });
     
     // d3.csv("links.csv", function(error, data) {
@@ -306,7 +357,7 @@ function createGraphs() {
     //     .enter().append("circle")
     //       .attr("class", "node")
     //       .attr("r", 5)
-    //       .style("fill", function(d) { return c(d.group); })
+    //       .style("fill", function(d) { return colmap(d.group); })
     //       .call(d3.drag()
     //         .on("start", dragstarted)
     //         .on("drag", dragged)
@@ -435,7 +486,7 @@ function createGraphs() {
     //         .attr("width", x.bandwidth())
     //         .attr("height", x.bandwidth())
     //         .style("fill-opacity", function(d) { return z(d.z); })
-    //         .style("fill", function(d) { return nodes[d.x].group == nodes[d.y].group ? c(nodes[d.x].group) : null;  })
+    //         .style("fill", function(d) { return nodes[d.x].group == nodes[d.y].group ? colmap(nodes[d.x].group) : null;  })
     //         .on("mouseover", mouseover)
     //         .on("mouseout", mouseout);
     //   }
