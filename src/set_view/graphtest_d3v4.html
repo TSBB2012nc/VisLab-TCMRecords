@@ -10,7 +10,7 @@
   <script type="text/javascript" src="forceInABox.js"></script>  
   <title>Two cool ways to visualize Network Data using D3.js V4</title>
 </head>
-
+<svg height="10" width="10" xmlns="http://www.w3.org/2000/svg" version="1.1"> <defs> <pattern id="circles-1" patternUnits="userSpaceOnUse" width="10" height="10"> <image xlink:href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMCcgaGVpZ2h0PScxMCc+CiAgPHJlY3Qgd2lkdGg9JzEwJyBoZWlnaHQ9JzEwJyBmaWxsPSJ3aGl0ZSIgLz4KICA8Y2lyY2xlIGN4PSIxIiBjeT0iMSIgcj0iMSIgZmlsbD0iYmxhY2siLz4KPC9zdmc+" x="0" y="0" width="10" height="10"> </image> </pattern> </defs> </svg>
 <body>
 <div class="center">
     <h1 align ="center">Two cool ways to visualize Network Data using D3.js V4</h1>
@@ -218,7 +218,7 @@ function createGraphs() {
                             coOccur ++;
                         }
                 }
-                setIntersects[ii][jj] = {val:coOccur, x:jj};
+                setIntersects[ii][jj] = {val:coOccur, x:jj, y:ii};
                 if( coOccur > maxCardi) 
                    maxCardi = coOccur;
                 if( coOccur < minCardi)
@@ -235,20 +235,35 @@ function createGraphs() {
       //  console.log(indexArray);
        
 				x.domain(indexArray);
-      console.log(x.bandwidth());
-      console.log(x(0));
-      console.log(x(1));
+      // console.log(x.bandwidth());
+      // console.log(x(0));
+      // console.log(x(1));
       svg02.append("rect")
           .attr("class", "background")
           .attr("width", width)
           .attr("height", height);    
+      
+          // define a hatch pattern
+      svg02
+        .append('defs')
+        .append('pattern')
+        .attr('id', 'diagonalHatch')
+        .attr('patternUnits', 'userSpaceOnUse')
+        .attr('width', 5)
+        .attr('height', 5)
+        .append('path')
+        // .attr('d', 'M-1,1 l2,-2 M0,4 l4,-4 M3,5 l2,-2')
+        .attr('d', 'M0,0 l5,5 M5,0 l-5,5')
+        .attr('stroke', '#000000')
+        .attr('stroke-width', 0.5);
+
 
       var row = svg02.selectAll(".row")
           .data(setIntersects)
         .enter().append("g")
           .attr("class", "row")
           .attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
-          .each(row);
+          .each(rowDraw);
 
       row.append("line")
           .attr("x2", width);
@@ -276,16 +291,34 @@ function createGraphs() {
           .attr("text-anchor", "start")
           .text(function(d, i) { return gsetData[i].id; });
 
-      function row(row) {
+      function rowDraw(row, j) {
+        console.log(j);
         var cell = d3.select(this).selectAll(".cellAM")
-          .data(row.filter(function (d) { return d.val; }))
-          .enter().append("rect")
+          .data(function(row, j) 
+          { 
+            return row;
+            // var uppertriangle = row.filter(function (d, i) { if(i > j) return d.val; });
+            // console.log(uppertriangle);
+            // return uppertriangle;
+          })
+          .enter()
+          .append("rect")
           .attr("class", "cellAM")
           .attr("x", function (d) { return x(d.x); })
           .attr("width", x.bandwidth())
           .attr("height", x.bandwidth())
-          .style("fill-opacity", function (d) { return z(d.val); })
-          .style("fill", function (d) { return colmap(d.val); }) 
+          // .style("fill-opacity", function (d, i) { 
+          //   if(j == i)
+          //     return 1;
+          //   else
+          //     return z(d.val); })
+          .style("fill", function (d,i) 
+                { 
+                  if(i == j)
+                    return "url(#diagonalHatch)";
+                  else
+                    return colmap(d.val); 
+                }) 
           .on("mouseover", mouseover)
           .on("mouseout", mouseout);
       }
@@ -299,6 +332,7 @@ function createGraphs() {
         d3.selectAll("text").classed("active", false);
       }
 
+      // Add legends
       var cardiNums = d3.range(0,maxCardi+1);
       console.log(cardiNums);
       for(var i = 0; i < cardiNums.length; i++){
@@ -308,9 +342,15 @@ function createGraphs() {
         .attr('width', 18)                          
         .attr('height', 18)                         
         .style('fill', function() { return colmap(cardiNums[i]); })                               
-        .style("fill-opacity", 0.7)
+        .style("fill-opacity", 1)
         .style('stroke', function() { return colmap(cardiNums[i]); });            
-              
+    // add title
+    legend02.append('text')
+    .attr('x', 20)
+    .attr('y', ((parseFloat(d3.select('#legend02').style('height')) - (maxCardi * 22)) / 2) + 14 + (-1 * 22))
+    .attr("class", "legend")
+    .text("#Overlapping Medicines");
+
       legend02
         .append('text') 
         .attr('x', 85)
