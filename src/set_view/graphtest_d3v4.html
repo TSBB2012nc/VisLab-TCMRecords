@@ -169,8 +169,8 @@ function createGraphs() {
     var gsetData = [];
     var setIntersects = [];
     var setNames = [];
-    // d3.csv("buyiji.csv", function(error, data){
-      d3.csv("qingreji.csv", function(error, data){
+    d3.csv("buyiji.csv", function(error, data){
+      // d3.csv("qingreji.csv", function(error, data){
         if(error) throw error;
         sets = data;
         console.log(sets);
