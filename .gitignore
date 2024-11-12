@@ -1,1 +1,3 @@
 .idea/
+Client\frontend\node_modules
+Client\frontend\node_modules/*
