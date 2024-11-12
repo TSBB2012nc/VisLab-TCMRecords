@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Processor</title>
+</head>
+<body>
+    <h2>CSV 文件上传和处理</h2>
+    <input type="file" id="fileInput" />
+    <button onclick="uploadFile()">上传并处理</button>
+    <pre id="result"></pre>
+
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>
