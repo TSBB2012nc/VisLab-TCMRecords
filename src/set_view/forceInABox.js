@@ -33,7 +33,7 @@ function forceInABox(alpha) {
         return force;
       }
       if (template==="force") {
-        //Do the tick of the template force and get the new focis
+        //Do the tick of the templates force and get the new focis
         templateForce.tick();
         getFocisFromTemplate();
       }

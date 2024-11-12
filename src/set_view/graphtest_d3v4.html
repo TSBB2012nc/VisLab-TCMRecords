@@ -371,7 +371,7 @@ function createGraphs() {
 
     //   var groupingForce = forceInABox()
     //     .strength(0.999) 
-    //     .template(template) 
+    //     .templates(templates)
     //     .groupBy("group") 
     //     .links(links) 
     //     .enableGrouping(useGroupInABox)
@@ -421,19 +421,19 @@ function createGraphs() {
 
     //   d3.select("#selectTemplate").on("change", function () {
       
-    //     template = d3.select("#selectTemplate").property("value");
+    //     templates = d3.select("#selectTemplate").property("value");
     //     d3.select("#checkShowTemplate").property("checked", false);    
         
     //     force.force("group").deleteTemplate(svg01);    
         
-    //     if (template == "none") {
+    //     if (templates == "none") {
     //       force.stop();
     //       force.force("group").enableGrouping(false);
     //       force.alphaTarget(0.5).restart();
     //     } else {
     //       force.stop();
     //       force.force("group").enableGrouping(true);
-    //       force.force("group").template(template);
+    //       force.force("group").templates(templates);
     //       force.alphaTarget(0.5).restart();
     //     }
         
@@ -441,9 +441,9 @@ function createGraphs() {
 
     //   d3.select("#checkShowTemplate").on("change", function () {
       
-    //     template = d3.select("#selectTemplate").property("value");
+    //     templates = d3.select("#selectTemplate").property("value");
         
-    //     if (template != "none") {  
+    //     if (templates != "none") {
     //       drawTemplate = d3.select("#checkShowTemplate").property("checked");
     //       if (drawTemplate) {
     //         force.force("group").drawTemplate(svg01);
