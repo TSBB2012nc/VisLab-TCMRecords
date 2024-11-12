@@ -11,6 +11,16 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --theme-color1: #BF6B04;
+  --theme-color2: #D9B07E;
+  --theme-color3: #F2E0C9;
+  --theme-color4: #733702;
+  --theme-color5: #A66B49;
+
+  --font-color: #000000;
+  --font-color-sub: #767676;
+
 }
 
 a {
@@ -77,3 +87,4 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+

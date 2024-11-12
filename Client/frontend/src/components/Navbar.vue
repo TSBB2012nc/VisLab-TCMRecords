@@ -1,8 +1,16 @@
 <script setup>
+import TableView from './TableView.vue';
+import { ref } from 'vue';
+
+var isTableViewVisible = ref(false)
+var toggleTableView = () => {
+    isTableViewVisible.value = !isTableViewVisible.value;
+  }
+
 </script>
 
 <template>
-    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+    <nav class="navbar navbar-expand-md navbar-dark w-100 bg-dark">
   <div class="container-fluid">
     <a class="navbar-brand" href="#">中医病案可视分析</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,12 +28,10 @@
           <a class="nav-link disabled" aria-disabled="true">Disabled</a>
         </li> -->
       </ul>
-      <form class="d-flex me-3" role="search">
-        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-        <button class="btn btn-outline-success" type="submit">Search</button>
-      </form>
-      <button class="btn btn-success" type="submit">上传</button>
+      <button class="btn btn-success me-2" type="submit">上传</button>
+      <button @click="toggleTableView" :class="isTableViewVisible?'btn btn-success':'btn btn-outline-success'" type="submit">用药字典</button>
     </div>
   </div>
 </nav>
+<TableView v-if="isTableViewVisible"/>
 </template>
