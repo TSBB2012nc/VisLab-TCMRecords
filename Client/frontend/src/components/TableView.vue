@@ -1,8 +1,8 @@
 <script setup>
-// TODO: 表格内容从后端访问获取
-
+// TODO: 表格内容从表格访问获取
+// TODO: 该模块不会遮住页面内容
 </script>
-
+<!-- TODO: 引用csv文件 -->
 <template>
     <div id="HerbTable" class="table-container table-responsive w-25">
         <table class="table table-hover w-100 table-light">
