@@ -38,6 +38,8 @@ onMounted(() => {
 });
 </script>
 
+<!-- TODO: 切换患者数据 -->
+ <!-- TODO: 上传患者数据 -->
 <template>
   <div class="d-flex flex-column">
     <!-- Header: 导航栏和字典侧边组件 fixed-->
@@ -46,7 +48,7 @@ onMounted(() => {
     </div>
     <!-- 主要视图 -->
     <div class="d-flex flex-column">
-      <StreamView />
+      <StreamView :herbCnt="herb_cnt" :herbColor="herb_color" />
       <VisitView v-if="visit.length" :data="visit" :label="visit_info"/>
       <MapView :herbColor="herb_color" :bookColor="book_color" :expColor="exp_color" :herbCnt="herb_cnt[0]"/>
     </div>

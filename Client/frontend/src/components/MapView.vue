@@ -26,8 +26,8 @@ const allPropsLoaded = () => {
 };
 
 const margin = { top: 20, right: 80, bottom: 30, left: 50 };
-const width = 500;
-const height = 500;
+const width = 600;
+const height = 600;
 
 
 onMounted(async () => {
@@ -128,7 +128,7 @@ function drawMap(data, div, width, height, props) {
 function drawLegend(height, props) {
     const svg = d3.select("#legend")
         .append("svg")
-        .attr("width", 200)
+        .attr("width", 100)
         .attr("height", height);
 
     // 根据expColor绘制纵向排列的图例，正方形
@@ -181,7 +181,15 @@ function drawLegend(height, props) {
 <template>
     <div class="container d-flex flex-row">
         <div id="legend"></div>
-        <div id="symp-map"></div>
-        <div id="attr-map"></div>
+        <div id="symp-map" class="card">
+            <p class="card-title">症状</p>
+        </div>
+        <div id="attr-map" class="card ms-5">
+            <p class="card-title">四气五味</p>
+        </div>
     </div>
 </template>
+
+<style scoped>
+
+</style>
