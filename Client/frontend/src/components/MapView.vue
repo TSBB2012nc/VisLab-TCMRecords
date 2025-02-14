@@ -1,7 +1,7 @@
 <script setup>
 import { defineProps, onMounted, toRaw, watch } from 'vue';
 import * as d3 from 'd3';
-
+import { fillColor } from '../utils/color.js';
 const props = defineProps({
     herbColor: {
         type: Object,
@@ -21,9 +21,6 @@ const props = defineProps({
     }
 });
 
-const allPropsLoaded = () => {
-    return Object.values(props).every(obj => Object.keys(toRaw(obj)).length > 0);
-};
 
 const margin = { top: 20, right: 80, bottom: 30, left: 50 };
 const width = 600;
@@ -31,47 +28,41 @@ const height = 600;
 
 
 onMounted(async () => {
-    // 读取数据
-    const sympLoc = await d3.json("symp_loc.json");
-    const attrLoc = await d3.json("attr_loc.json");
+    try {
+        // 读取数据
+        const [sympLoc, attrLoc] = await Promise.all([
+            d3.json("/symp_loc.json"),
+            d3.json("/attr_loc.json")
+        ]);
+
+        if (!sympLoc || !attrLoc) {
+            console.error('Failed to load location data');
+            return;
+        }
+        const herbsSelected = new Set(Object.keys(props.herbCnt));
+        const sympdata = sympLoc
+            .filter(d => d.symp1 !== null && d.symp2 !== null && herbsSelected.has(d.Name))
+            .map(d => ({ name: d.Name, x: d.symp1, y: d.symp2 }));
+        const attrdata = attrLoc
+            .filter(d => d.attr1 !== null && d.attr2 !== null && herbsSelected.has(d.Name))
+            .map(d => ({ name: d.Name, x: d.sqww1, y: d.sqww2 }));
 
 
-
-    const unwatch = watch(() => allPropsLoaded(), (isLoaded) => {
-        if (isLoaded) {
-            // selected herbs
-            const herbsSelected = new Set(Object.keys(props.herbCnt));
-            const sympdata = sympLoc
-                .filter(d => d.symp1 !== null && d.symp2 !== null && herbsSelected.has(d.Name))
-                .map(d => ({ name: d.Name, x: d.symp1, y: d.symp2 }));
-            const attrdata = attrLoc
-                .filter(d => d.attr1 !== null && d.attr2 !== null && herbsSelected.has(d.Name))
-                .map(d => ({ name: d.Name, x: d.sqww1, y: d.sqww2 }));
+        // Check if data is valid before drawing
+        if (sympdata.length > 0 && attrdata.length > 0) {
             drawLegend(height, props);
             drawMap(sympdata, "#symp-map", width, height, props);
             drawMap(attrdata, "#attr-map", width, height, props);
-            unwatch(); // 停止监听
+        } else {
+            console.warn('No valid data to display');
         }
-    }, { immediate: true });
+    } catch (error) {
+        console.error('Error loading or processing data:', error);
+    }
 });
 
 
-function fillColor(herb, colorMap, seletion) {
-    if (herb in colorMap) {
-        // 返回rgb字符串
-        let r, g, b;
-        if (seletion == 0) {
-            [r, g, b] = colorMap[herb];
-        } else if (seletion == 1) {
-            [r, g, b] = colorMap[herb].Color1;
-        } else {
-            [r, g, b] = colorMap[herb].Color2;
-        }
-        return `rgb(${r}, ${g}, ${b})`
-    } else {
-        return "";
-    }
-}
+
 
 function drawMap(data, div, width, height, props) {
     const svg = d3.select(div)
@@ -190,6 +181,4 @@ function drawLegend(height, props) {
     </div>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>

@@ -1,6 +1,6 @@
 <template>
    <!-- 测量值 -->
-   <div id="chart-lab" class="mt-2"></div>
+   <div id="chart-lab" class=""></div>
 
    <!-- 血压 -->
    <div id="chart-bloodpressure" class="mt-5"></div>
