@@ -1,20 +1,20 @@
 <script setup>
-import TableView from './TableView.vue';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useRoute } from 'vue-router';
+
+// Get current route
+const route = useRoute();
+const currentRoute = computed(() => route.path);
+
+
 
 // 引用文件输入框
 const fileInput = ref(null);
-// 控制 TableView 显示状态
-const isTableViewVisible = ref(false);
-
-var toggleTableView = () => {
-  isTableViewVisible.value = !isTableViewVisible.value;
-}
 
 const openFileInput = () => {
-    if (fileInput.value) {
-        fileInput.value.click();
-    }
+  if (fileInput.value) {
+    fileInput.value.click();
+  }
 };
 
 
@@ -43,6 +43,8 @@ const handleFileUpload = async () => {
   }
 };
 
+
+
 </script>
 
 <template>
@@ -63,12 +65,15 @@ const handleFileUpload = async () => {
           <input type="file" ref="fileInput" @change="handleFileUpload" style="display: none;">
           <button class="btn btn-outline-success me-2" @click="openFileInput">上传</button>
         </div>
-        <button @click="toggleTableView" :class="isTableViewVisible ? 'btn btn-success' : 'btn btn-outline-success'"
-          type="submit">用药字典</button>
+        <!-- 页面跳转 -->
+        <router-link 
+          :to="currentRoute === '/data' ? '/' : '/data'" 
+          class="btn btn-outline-success me-2">
+          {{ currentRoute === '/data' ? '可视分析' : '数据管理' }}
+        </router-link>
       </div>
     </div>
   </nav>
-  <TableView v-if="isTableViewVisible" />
 </template>
 <style scoped>
 .custom-file-upload {
