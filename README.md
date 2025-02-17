@@ -1,45 +1,23 @@
 # Vis for TCMFormulas 中医病案可视化
 ## 项目架构
 
-```text
-├── client/                  # 客户端项目
-│   ├── backend/             # Flask API服务
-│   │   ├── data_cache/      # CSV缓存文件夹（自动生成）
-│   │   ├── app.py           # 主API入口
-│   ├── frontend/            # Vue前端
-│   │   ├── public/          # 静态资源
-│   │   ├── src/             # 源码目录
-│   ├── build/               # 打包后的exe文件（最终产出）
-│
-├── site/             # 静态展示版本
-│   ├── public/             
-│   │   ├── dataset/         # 预置JSON数据
-│   ├── src/                 # 与client共享的Vue组件
-│
-├── docs/                    # GitHub Pages部署目录
-```
+- Client: 交付给中医医生的即点即用的exe文件
+  - backend: 使用flask编写API后端处理
+    - 读取Storage下的csv,json文件
+    - 执行用户更新并更新Storage下相应文件
+  - frontend: vite+vue3+d3实现前端可视化与数据管理
+- Static: 部署在github pages上展示用的静态页面
+  - 基本与Client/frontend相同
+- Storage: 与exe同级的文件管理目录
 
-## TODO: MVP
-### 1. 基础框架
-- [ ] Flask API基础框架
-  - [x] 文件上传接口
-  - [ ] 文件转换函数
-  - [ ] 文件管理
-- [ ] Vue最小原型
-  - [x] 上传组件
-  - [ ] 表格组件
-- [ ] 前后端联调
-## 2. 核心功能
-- [ ] 数据可视化模块
-- [ ] 文件处理优化
+## 关键功能
+### 1. 病案数据管理
+- 病人每次诊断并开药方的数据（一张表）
+- 经验中草药性质的表格数据（一张表）
+- 增删改查
+### 2. 病案用药可视分析
+- 时间用药河流图
+- 生理指标折线图
+- UMAP降维散点图
+- 根据中草药的性质规定颜色（用户可修改）
 
-## 3. Client打包
-- [ ] 使用PyInstaller打包
-- 隐藏控制台窗口（--noconsole）
-- 资源路径配置
-- 自包含执行环境
-- 内置Python运行时（--onefile）
-
-## 4. Github Pages部署
-- [ ] 部署site
-- [ ] 移除API调用
