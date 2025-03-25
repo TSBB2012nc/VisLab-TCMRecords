@@ -170,6 +170,10 @@ function drawLegend(height, props) {
 </script>
 
 <template>
+    <div class="w-100 d-flex flex-row border-bottom align-items-center mb-2">
+        <i class="fa-solid fa-chart-area"></i>
+        <h5 class="ms-2">用药分布</h5>
+    </div>
     <div class="container d-flex flex-row">
         <div id="legend"></div>
         <div id="symp-map" class="card">

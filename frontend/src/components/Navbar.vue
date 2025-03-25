@@ -4,7 +4,7 @@ import { usePatientStore } from '../stores/patientStore';
 
 
 const patientStore = usePatientStore();
-const patients = Array.from({ length: 30 }, (_, i) => `patient${i + 1}`);
+const patients = Array.from({ length: 36 }, (_, i) => `patient${i + 1}`);
 
 // Handle patient selection
 const handlePatientChange = (patient) => {

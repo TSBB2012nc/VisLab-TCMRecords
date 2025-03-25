@@ -5,9 +5,9 @@ export function fillColor(herb, colorMap, seletion) {
         if (seletion == 0) {
             [r, g, b] = colorMap[herb];
         } else if (seletion == 1) {
-            [r, g, b] = colorMap[herb].Color1;
+            [r, g, b] = colorMap[herb]['教材分类'];
         } else {
-            [r, g, b] = colorMap[herb].Color2;
+            [r, g, b] = colorMap[herb]['专家分类'];
         }
         return `rgb(${r}, ${g}, ${b})`
     } else {

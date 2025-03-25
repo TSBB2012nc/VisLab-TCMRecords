@@ -1,4 +1,8 @@
 <template>
+   <div class="w-100 d-flex flex-row border-bottom align-items-center mb-2">
+      <i class="fa-solid fa-syringe"></i>
+      <h5 class="ms-2">生理指标</h5>
+   </div>
    <!-- 测量值 -->
    <div id="chart-lab" class=""></div>
 
@@ -144,8 +148,8 @@ function drawLab(data) {
 };
 
 function drawBloodPressure(data) {
-// 画布
-const svg = d3.select("div#chart-bloodpressure")
+   // 画布
+   const svg = d3.select("div#chart-bloodpressure")
       .append('svg')
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
@@ -158,7 +162,7 @@ const svg = d3.select("div#chart-bloodpressure")
    const y0 = d3.scaleLinear()
       .domain([0, d3.max(data, d => d.SBP)])
       .range([height, 0]);
-      
+
    const xAxis = d3.axisBottom(x).tickFormat(d => data.find(item => item.visit === d).date);
    const yAxisLeft = d3.axisLeft(y0);
 

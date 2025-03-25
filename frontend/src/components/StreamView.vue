@@ -45,7 +45,7 @@ function drawStream(data, colormap) {
 
     var x = d3.scaleLinear().domain(d3.extent(data, d => d.visit)).range([0, width]);
 
-    var y = d3.scaleLinear().domain([0.5*height, -0.5*height]).range([height, 0]);
+    var y = d3.scaleLinear().domain([0.5 * height, -0.5 * height]).range([height, 0]);
 
 
     var layernode = svg.selectAll(".layer")
@@ -141,5 +141,9 @@ function drawStream(data, colormap) {
 
 </script>
 <template>
+    <div class="w-100 d-flex flex-row border-bottom align-items-center mb-2">
+        <i class="fa fa-chart"></i><i class="fa-brands fa-ethereum"></i>
+        <h5 class="ms-2">用药河流图</h5>
+    </div>
     <div id="chart-stream"></div>
 </template>
