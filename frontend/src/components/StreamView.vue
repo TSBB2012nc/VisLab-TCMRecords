@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, onMounted, toRaw } from 'vue';
+import { defineProps, onMounted, toRaw, watch } from 'vue';
 import * as d3 from 'd3';
 import { fillColor } from '../utils/color.js';
 
@@ -18,13 +18,27 @@ const margin = { top: 20, right: 80, bottom: 30, left: 50 };
 const width = 0.85 * window.innerWidth;
 const height = 0.5 * window.innerHeight;
 
+// Watch for changes in herbCnt and herbColor
+watch(
+    () => stream_data.herbCnt,
+    (newHerbCnt) => {
+        drawStream(newHerbCnt, stream_data.herbColor);
+    },
+    { deep: true }
+);
+
 onMounted(() => {
     drawStream(stream_data.herbCnt, stream_data.herbColor);
 
 });
 
-function drawStream(data, colormap) {
+// Function to clear the existing SVG
+function clearStream() {
+    d3.select("#chart-stream").selectAll("*").remove();
+}
 
+function drawStream(data, colormap) {
+    clearStream();
     // 画布
     const svg = d3.select("#chart-stream")
         .append("svg")

@@ -115,8 +115,9 @@ watch([med_data, book_color, exp_color], ([newMed, newBook, newExp]) => {
 // 监听患者变化
 watch(
   () => patientStore.currentPatient,
-  () => {
-    loadPatientData()
+  async () => {
+    await loadPatientData(); // Reload patient data
+    console.log('Patient data and herb color updated for new patient');
   }
 )
 
@@ -141,8 +142,8 @@ onMounted(() => {
         <TableView :data="patient_data" />
       </div>
       <!-- Stream View Section -->
-      <div class="mt-3">
-        <StreamView :herbCnt="getHerbCount(patient_data)" :herbColor="herb_color" />
+      <div class="mt-5">
+        <StreamView :herbCnt="getHerbCount(patient_data, med_data)" :herbColor="herb_color" />
       </div>
 
 
@@ -155,7 +156,7 @@ onMounted(() => {
   </div>
 </template>
 <script>
-function getHerbCount(patient_data) {
+function getHerbCount(patient_data, med_data) {
   // Check if required data exists
   if (!patient_data?.visits || !patient_data?.herb_set) {
     console.warn('Missing required data for herb count calculation');
@@ -163,6 +164,13 @@ function getHerbCount(patient_data) {
   }
 
   const herbList = patient_data.herb_set;
+  // Sort herbList based on the dictionary order of herbCatExp
+  herbList.sort((a, b) => {
+    const categoryA = med_data[a]?.['专家分类'] || '未知分类';
+    const categoryB = med_data[b]?.['专家分类'] || '未知分类';
+    return categoryA.localeCompare(categoryB);
+  });
+  console.log(herbList);
   const result = [];
 
   // Process each visit
