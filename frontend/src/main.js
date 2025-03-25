@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import './style.css'
+import { createPinia } from 'pinia'
 import App from './App.vue'
-import router from '../router'
 
 // Table Component
 import Vue3EasyDataTable from 'vue3-easy-data-table';
@@ -16,6 +16,9 @@ import '@fortawesome/fontawesome-free/css/all.css';
 
 
 const app = createApp(App);
-app.use(router); // 使用路由
+const pinia = createPinia()
+
 app.component('EasyDataTable', Vue3EasyDataTable);
+
+app.use(pinia)
 app.mount('#app');

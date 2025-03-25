@@ -1,34 +1,46 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { useRoute } from 'vue-router';
-
-// Get current route
-const route = useRoute();
-const currentRoute = computed(() => route.path);
+import { usePatientStore } from '../stores/patientStore';
 
 
+const patientStore = usePatientStore();
+const patients = Array.from({ length: 30 }, (_, i) => `patient${i + 1}`);
 
+// Handle patient selection
+const handlePatientChange = (patient) => {
+  patientStore.setCurrentPatient(patient);
+  
+};
+
+// 使用计算属性获取当前患者
+const selectedPatient = computed(() => patientStore.currentPatient);
 </script>
 
 <template>
-  <nav class="navbar navbar-expand-md navbar-dark w-100 bg-dark">
+  <nav class="navbar navbar-expand-md w-100 bg-body-tertiary">
     <div class="container-fluid">
       <a class="navbar-brand" href="#">中医病案可视分析</a>
       <div class="collapse navbar-collapse" id="navbarCollapse">
         <ul class="navbar-nav ms-auto mb-2 mb-md-0 me-3">
-          <li class="nav-item">
-            <a class="nav-link" href="#">切换数据</a>
-          </li>
-          <li class="nav-item">
+          <!-- switch patient data -->
+          <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            当前患者：{{ selectedPatient }}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" style="max-height: 280px; overflow-y: auto;">
+            <li v-for="patient in patients" :key="patient">
+              <a class="dropdown-item" href="#" @click="handlePatientChange(patient)">
+                {{ patient }}
+              </a>
+            </li>
+          </ul>
+        </li>
+<!-- TODO: 添加对比功能 -->
+          <!-- <li class="nav-item">
             <a class="nav-link" href="#">添加对比</a>
-          </li>
+          </li> -->
         </ul>
-        <!-- 页面跳转 -->
-        <router-link 
-          :to="currentRoute === '/data' ? '/' : '/data'" 
-          class="btn btn-outline-success me-2">
-          {{ currentRoute === '/data' ? '可视分析' : '查看数据' }}
-        </router-link>
+
       </div>
     </div>
   </nav>
