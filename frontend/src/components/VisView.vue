@@ -37,7 +37,8 @@ const fetchData = async (url, targetRef) => {
   targetRef.value = data;
 };
 
-const herb_color = computed(() => {
+// 计算中药的类型和颜色
+const herbColor = computed(() => {
   if (!isStaticDataLoaded.value || !isPatientDataLoaded.value) {
     console.log('Waiting for all data to load...');
     return {};
@@ -55,8 +56,10 @@ const herb_color = computed(() => {
     const expertCategory = med_data.value[herb]?.['专家分类'];
 
     result[herb] = {
-      '教材分类': book_color.value[bookCategory] || null, // Default to null if not found
-      '专家分类': exp_color.value[expertCategory] || null  // Default to null if not found
+      'book_category': bookCategory,
+      'book_color': book_color.value[bookCategory] || null, // Default to null if not found
+      'expert_category': expertCategory,
+      'expert_color': exp_color.value[expertCategory] || null  // Default to null if not found
     };
   }
 
@@ -64,7 +67,9 @@ const herb_color = computed(() => {
   return result;
 });
 
-console.log(herb_color);
+const useHerbColor = computed(() => {
+  return filterHerbColor(patient_data.value.herb_set, herbColor.value);
+});
 
 // 加载静态数据 *TESTED
 const loadStaticData = async () => {
@@ -136,22 +141,29 @@ onMounted(async () => {
       </div>
       <!-- Stream View Section -->
       <div class="mt-5" v-if="getHerbCountFlag(patient_data)">
-        <StreamView :herbCnt="getHerbCount(patient_data, med_data)" :herbColor="herb_color" />
+        <StreamView :herbCnt="getHerbCount(patient_data, med_data)" :herbColor="useHerbColor" />
       </div>
       <!-- Visit View Section -->
       <div>
         <LineView v-if="patient_data.visits && patient_data.visits[0]?.metrics" :data="getMetrics(patient_data)" />
       </div>
+      <!-- Map View Section -->
       <div>
-        <MapView v-if="patient_data.herb_set" :herbColor="herb_color" :bookColor="book_color" :expColor="exp_color"
+        <MapView v-if="patient_data.herb_set" :herbColor="useHerbColor" :bookColor="book_color" :expColor="exp_color"
           :herbSet="patient_data.herb_set" :symp_loc="symp_loc" :attr_loc="attr_loc" />
       </div>
-      <!-- Map View Section -->
 
     </div>
   </div>
 </template>
 <script>
+function filterHerbColor(herbSet, herbColor) {
+  const result = {};
+  for (const herb of herbSet) {
+    result[herb] = herbColor[herb];
+  }
+  return result;
+}
 
 function getHerbCountFlag(patient_data) {
   if (!patient_data?.visits) {

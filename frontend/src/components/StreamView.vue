@@ -1,7 +1,6 @@
 <script setup>
 import { defineProps, onMounted, toRaw, ref } from 'vue';
 import * as d3 from 'd3';
-import { fillColor } from '../utils/color.js';
 
 
 const stream_data = defineProps({
@@ -44,15 +43,14 @@ function drawStream(data, colormap) {
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     // get herbs: keys - visit
-    const keys = Object.keys(data[0]).slice(1);
+    const keys = Object.keys(data[0]).filter(d => d !== 'visit');
     const totalVisits = data.length;
     var stackGen = d3.stack()
         .keys(keys)
         .order(d3.stackOrderNone)
         .offset(d3.stackOffsetSilhouette)
-    var layers = stackGen(data);
-    var gStreamGraphLayers = layers;
 
+    var layers = stackGen(data);
     var x = d3.scaleLinear().domain(d3.extent(data, d => d.visit)).range([0, width]);
 
     var y = d3.scaleLinear().domain([0.5 * height, -0.5 * height]).range([height, 0]);
@@ -91,7 +89,6 @@ function drawStream(data, colormap) {
         loc.key = thisLayer.key;
         maxYloc.push(loc);
     }
-
     var layerTextCol = [];
     layernode.append("path")
         .attr("class", "layer")
@@ -105,7 +102,10 @@ function drawStream(data, colormap) {
                 return y(d[1]);
             })
         )
-        .style("fill", d => fillColor(d.key, colormap, 2));
+        .style("fill", d => {
+            const color = colormap[d.key].expert_color;
+            return 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')';
+        });
     ;
 
     var textLoc = [];

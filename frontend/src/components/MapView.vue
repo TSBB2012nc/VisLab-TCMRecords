@@ -1,23 +1,22 @@
 <script setup>
-import { defineProps, onMounted, toRaw, watch } from 'vue';
+import { computed, defineProps, onMounted, toRaw, watch } from 'vue';
 import * as d3 from 'd3';
-import { fillColor } from '../utils/color.js';
 const props = defineProps({
     herbColor: {
         type: Object,
-        default: () => ({})
+        default: {}
     },
     bookColor: {
         type: Object,
-        default: () => ({})
+        default: {}
     },
     expColor: {
         type: Object,
-        default: () => ({})
+        default: {}
     },
     herbSet: {
         type: Object,
-        default: () => ({})
+        default: {}
     },
     symp_loc: {
         type: Array,
@@ -30,9 +29,9 @@ const props = defineProps({
 });
 
 
-const margin = { top: 20, right: 80, bottom: 30, left: 50 };
-const width = 600;
-const height = 600;
+const margin = { top: 20, right: 30, bottom: 30, left: 30 };
+const width = window.innerWidth * 0.3;
+const height = 500;
 
 
 onMounted(() => {
@@ -47,20 +46,29 @@ onMounted(() => {
 
     // Check if sympData is valid before drawing
     if (sympData.length > 0) {
-        drawMap(sympData, "#symp-map", width, height, props, '症状');
+        drawMap(sympData, "#symp-map", width, height, props);
     } else {
         console.warn('No valid symptom data to display');
     }
 
     // Check if attrData is valid before drawing
     if (attrData.length > 0) {
-        drawMap(attrData, "#attr-map", width, height, props, '四气五味');
+        drawMap(attrData, "#attr-map", width, height, props);
     } else {
         console.warn('No valid attribute data to display');
     }
 
-    drawLegend(height, props);
+    drawLegend(height, 150, props);
 });
+
+function fillColor(name, herbColorMap, type) {
+    const color = herbColorMap[name];
+    if (type === 0) {
+        return 'rgb(' + color.book_color[0] + ',' + color.book_color[1] + ',' + color.book_color[2] + ')';
+    } else {
+        return 'rgb(' + color.expert_color[0] + ',' + color.expert_color[1] + ',' + color.expert_color[2] + ')';
+    }
+}
 
 function cleanMap() {
     d3.select("#symp-map").selectAll("*").remove();
@@ -68,10 +76,7 @@ function cleanMap() {
     d3.select("#legend").selectAll("*").remove();
 }
 
-
-function drawMap(data, div, width, height, props, title) {
-    d3.select(div).append("h5").text(title);
-
+function drawMap(data, div, width, height, props) {
     const svg = d3.select(div)
         .append("svg")
         .attr("width", width)
@@ -84,7 +89,7 @@ function drawMap(data, div, width, height, props, title) {
     const yScaler = d3.scaleLinear()
         .domain(d3.extent(data, d => d.y))
         .range([height - margin.bottom, margin.top]).nice();
-
+    
     // 绘制散点图
     svg.selectAll("circle")
         .data(data)
@@ -93,7 +98,7 @@ function drawMap(data, div, width, height, props, title) {
         .attr("cx", d => xScaler(d.x))
         .attr("cy", d => yScaler(d.y))
         .attr("r", 15)
-        .attr("fill", d => fillColor(d.name, props.herbColor, 1))
+        .attr("fill", d => fillColor(d.name, props.herbColor, 0))
         .attr("class", "base");
 
     // 绘制小正方形
@@ -105,7 +110,7 @@ function drawMap(data, div, width, height, props, title) {
         .attr("y", d => yScaler(d.y) - 7)
         .attr("width", 14)
         .attr("height", 14)
-        .attr("fill", d => fillColor(d.name, props.herbColor, 2))
+        .attr("fill", d => fillColor(d.name, props.herbColor, 1))
         .attr("class", "base");
 
 
@@ -123,52 +128,62 @@ function drawMap(data, div, width, height, props, title) {
         .attr("fill", "black");
 
 }
-function drawLegend(height, props) {
-    const svg = d3.select("#legend")
+function drawLegend(height, herbCat) {
+    // 绘制左侧 bookColor 图例
+    const bookSvg = d3.select(".legend:first-child") // 选择第一个 legend 容器
         .append("svg")
-        .attr("width", 100)
+        .attr("width", 100) // 限制宽度
         .attr("height", height);
 
-    // 根据expColor绘制纵向排列的图例，正方形
-    const expKeys = Object.keys(props.expColor);
-    const expLegend = svg.selectAll(".expLegend")
-        .data(expKeys)
-        .enter()
-        .append("g")
-        .attr("class", "expLegend")
-        .attr("transform", (d, i) => `translate(0,${height - (i + 1) * 20})`);
-
-    expLegend.append("rect")
-        .attr("x", 5)
-        .attr("y", 5)
-        .attr("width", 10)
-        .attr("height", 10)
-        .attr("fill", d => fillColor(d, props.expColor, 0));
-
-    expLegend.append("text")
-        .attr("x", 20)
-        .attr("y", 15)
-        .text(d => d)
-        .attr("font-size", "12px")
-        .attr("fill", "black");
-
-    // 根据bookColor绘制纵向排列的图例，圆点
-    const bookKeys = Object.keys(props.bookColor);
-    const bookLegend = svg.selectAll(".bookLegend")
+    const bookKeys = Object.values(props.herbColor).map(color => color.book_category).filter((value, index, self) => self.indexOf(value) === index);
+    const bookLegend = bookSvg.selectAll(".bookLegend")
         .data(bookKeys)
         .enter()
         .append("g")
         .attr("class", "bookLegend")
-        .attr("transform", (d, i) => `translate(0,${height - (expKeys.length + i + 1) * 20 - 40})`);
+        .attr("transform", (d, i) => `translate(10, ${i * 20 + 20})`); // 左侧位置
 
     bookLegend.append("circle")
         .attr("cx", 10)
         .attr("cy", 10)
         .attr("r", 5)
-        .attr("fill", d => fillColor(d, props.bookColor, 0));
+        .attr("fill", d => {
+            const color = props.bookColor[d];
+            return 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')';
+        });
 
     bookLegend.append("text")
-        .attr("x", 20)
+        .attr("x", 25) // 调整文本位置
+        .attr("y", 15)
+        .text(d => d)
+        .attr("font-size", "12px")
+        .attr("fill", "black");
+
+    // 绘制右侧 expColor 图例
+    const expSvg = d3.select(".legend:last-child") // 选择最后一个 legend 容器
+        .append("svg")
+        .attr("width", 100) // 限制宽度
+        .attr("height", height);
+
+    const expKeys = Object.values(props.herbColor).map(color => color.expert_category).filter((value, index, self) => self.indexOf(value) === index);
+    const expLegend = expSvg.selectAll(".expLegend")
+        .data(expKeys)
+        .enter()
+        .append("g")
+        .attr("class", "expLegend")
+        .attr("transform", (d, i) => `translate(10, ${i * 20 + 20})`); // 右侧位置
+
+    expLegend.append("rect")
+        .attr("x", 0)
+        .attr("y", 5)
+        .attr("width", 10)
+        .attr("height", 10)
+        .attr("fill", d => {
+            const color = props.expColor[d];
+            return 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')';
+        })
+    expLegend.append("text")
+        .attr("x", 15) // 调整文本位置
         .attr("y", 15)
         .text(d => d)
         .attr("font-size", "12px")
@@ -182,10 +197,21 @@ function drawLegend(height, props) {
         <h5 class="ms-2">用药分布</h5>
     </div>
     <div class="container d-flex flex-row">
-        <div id="legend"></div>
-        <div id="symp-map" class="card">
+        <div class="legend">
+            <p>教材分类</p>
         </div>
-        <div id="attr-map" class="card ms-5">
+        <div class="card">
+            <h5>症状</h5>
+            <div id="symp-map" class="d-flex">
+            </div>
+        </div>
+        <div class="card ms-5">
+            <h5>四气五味</h5>
+            <div id="attr-map" class="d-flex">
+            </div>
+        </div>
+        <div class="legend">
+            <p>专家分类</p>
         </div>
     </div>
 </template>
