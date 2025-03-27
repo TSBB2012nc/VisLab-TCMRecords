@@ -29,7 +29,7 @@ const attr_loc = ref({});  // 四气五味降维坐标
 
 // fetchData utility function *TESTED
 const fetchData = async (url, targetRef) => {
-  const response = await fetch(url);
+  const response = await fetch(import.meta.env.BASE_URL + url);
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
@@ -75,11 +75,11 @@ const useHerbColor = computed(() => {
 const loadStaticData = async () => {
   try {
     await Promise.all([
-      fetchData('/vis_utils/book_color.json', book_color),
-      fetchData('/vis_utils/exp_color.json', exp_color),
-      fetchData('/med_data/med_data.json', med_data),
-      fetchData('/vis_utils/symp_loc.json', symp_loc),
-      fetchData('/vis_utils/attr_loc.json', attr_loc)
+      fetchData('vis_utils/book_color.json', book_color),
+      fetchData('vis_utils/exp_color.json', exp_color),
+      fetchData('med_data/med_data.json', med_data),
+      fetchData('vis_utils/symp_loc.json', symp_loc),
+      fetchData('vis_utils/attr_loc.json', attr_loc)
     ])
     // console.log('Static data loaded')
     // console.log('Book color:', book_color.value)
@@ -100,7 +100,7 @@ const loadPatientData = async () => {
     patient_data.value = {};
     // 加载新数据
     await Promise.all([
-      fetchData(`/patient_data/${currentPatient}.json`, patient_data),
+      fetchData(`patient_data/${currentPatient}.json`, patient_data),
     ]);
     // console.log('Patient data loaded:', patient_data.value)
     isPatientDataLoaded.value = true;
