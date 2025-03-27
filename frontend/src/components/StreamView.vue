@@ -1,7 +1,8 @@
 <script setup>
-import { defineProps, onMounted, toRaw, watch } from 'vue';
+import { defineProps, onMounted, toRaw, ref } from 'vue';
 import * as d3 from 'd3';
 import { fillColor } from '../utils/color.js';
+
 
 const stream_data = defineProps({
     herbCnt: {
@@ -18,16 +19,11 @@ const margin = { top: 20, right: 80, bottom: 30, left: 50 };
 const width = 0.85 * window.innerWidth;
 const height = 0.5 * window.innerHeight;
 
-// Watch for changes in herbCnt and herbColor
-watch(
-    () => stream_data.herbCnt,
-    (newHerbCnt) => {
-        drawStream(newHerbCnt, stream_data.herbColor);
-    },
-    { deep: true }
-);
+
+
 
 onMounted(() => {
+    clearStream();
     drawStream(stream_data.herbCnt, stream_data.herbColor);
 
 });

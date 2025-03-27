@@ -1,8 +1,6 @@
 <script setup>
-import { defineProps, onMounted, toRaw, computed, ref, watch } from 'vue';
+import { defineProps, onMounted, toRaw, computed, ref } from 'vue';
 
-const isLoading = ref(true);
-const error = ref(null);
 
 const props = defineProps({
     data: {
@@ -11,37 +9,8 @@ const props = defineProps({
     },
 });
 
-// Check if data is loaded and valid
-const isDataLoaded = computed(() => {
-    return props.data && Object.keys(props.data).length > 0;
-});
-
-
-// Watch for data changes
-watch(
-    () => props.data,
-    (newData) => {
-        try {
-            console.log('Data received:', toRaw(newData));
-            if (Object.keys(newData).length > 0) {
-                isLoading.value = false;
-                error.value = null;
-            }
-        } catch (err) {
-            console.error('Error processing data:', err);
-            error.value = err.message;
-            isLoading.value = false;
-        }
-    },
-    { immediate: true, deep: true }
-);
-
 onMounted(() => {
-    // Initial data check
-    if (isDataLoaded.value) {
-        isLoading.value = false;
-    }
-    console.log('Component mounted, data loaded:', isDataLoaded.value);
+    // console.log('TableView mounted');
 });
 </script>
 <template>
@@ -50,15 +19,9 @@ onMounted(() => {
             <i class="fa fa-table"></i>
             <h5 class="ms-2">表格数据</h5>
         </div>
-        <!-- Loading state -->
-        <div v-if="isLoading" class="d-flex justify-content-center align-items-center my-5">
-            <div class="spinner-border text-primary me-2" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <span class="text-primary">Loading data...</span>
-        </div>
+        
         <!-- Data table -->
-        <div v-else class="table-responsive">
+        <div class="table-responsive">
             <table class="table table-sm table-hover">
                 <thead class="table-light">
                     <tr>

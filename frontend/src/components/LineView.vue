@@ -4,10 +4,10 @@
       <h5 class="ms-2">生理指标</h5>
    </div>
    <!-- 测量值 -->
-   <div id="chart-lab" class=""></div>
+   <div id="chart-group1" class=""></div>
 
    <!-- 血压 -->
-   <div id="chart-bloodpressure" class="mt-5"></div>
+   <div id="chart-group2" class="mt-5"></div>
 
 </template>
 
@@ -15,29 +15,35 @@
 import * as d3 from 'd3';
 import { defineProps, onMounted, toRaw } from 'vue';
 
-const visit_data = defineProps({
+const props = defineProps({
    data: {
-      type: Object,
+      type: Array,
       default: []
-   },
-   label: {
-      type: Object,
-      default: {}
    }
 });
 
-var data = toRaw(visit_data.data);
-var label = toRaw(visit_data.label);
-
-const margin = { top: 20, right: 80, bottom: 30, left: 50 };
+const margin = { top: 20, right: 80, bottom: 80, left: 50 };
 // 获取窗口高度和宽度
 const width = 0.85 * window.innerWidth;
 const height = 0.15 * window.innerHeight;
 
+
 onMounted(() => {
-   drawLab(data);
-   drawBloodPressure(data);
+   drawMetrics(props.data);
+   // drawGroup1(data);
+   // drawGroup2(data);
 });
+function clearLine() {
+   d3.select("#chart-group1").selectAll("*").remove();
+   d3.select("#chart-group2").selectAll("*").remove();
+}
+
+function drawMetrics(data) {
+   clearLine();
+   drawGroup1(data);
+   // drawGroup2(data);
+}
+
 function drawLine(svg, data, lineGenerator, className) {
    let currentSegment = [];
    let dashedIndices = [];
@@ -73,25 +79,37 @@ function drawLine(svg, data, lineGenerator, className) {
       }
    });
 };
-function drawLab(data) {
+// Group1: 双y轴
+function drawGroup1(data) {
+   const label = Object.keys(data[0].metrics.group1);
+   const currentData = data.map(d => {
+      return {
+         visit: d.visit_num,
+         date: d.date,
+         v0: d.metrics.group1[label[0]],
+         v1: d.metrics.group1[label[1]] !== undefined ? d.metrics.group1[label[1]] : null
+      }
+   }
+   )
+
    // 画布
-   const svg = d3.select("div#chart-lab")
+   const svg = d3.select("div#chart-group1")
       .append('svg')
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
    const x = d3.scaleBand()
-      .domain(data.map(d => d.visit))
+      .domain(currentData.map(d => d.visit))
       .range([0, width])
       .padding(0.1);
    const y0 = d3.scaleLinear()
-      .domain([d3.min(data, d => d.v0), d3.max(data, d => d.v0)])
+      .domain([d3.min(currentData, d => d.v0), d3.max(currentData, d => d.v0)])
       .range([height, 0]);
    const y1 = d3.scaleLinear()
-      .domain([d3.min(data, d => d.v1), d3.max(data, d => d.v1)])
+      .domain([d3.min(currentData, d => d.v1), d3.max(currentData, d => d.v1)])
       .range([height, 0]);
-   const xAxis = d3.axisBottom(x).tickFormat(d => data.find(item => item.visit === d).date);
+   const xAxis = d3.axisBottom(x).tickFormat(d => currentData.find(item => item.visit === d).date);
    const yAxisLeft = d3.axisLeft(y0);
    const yAxisRight = d3.axisRight(y1);
    // 添加坐标轴说明
@@ -102,20 +120,25 @@ function drawLab(data) {
       .attr("dy", "1em")
       .style("text-anchor", "middle")
       .style("font-size", "12px")
-      .text(label.v0);
+      .text(label[0]);
    svg.append("text")
       .attr("transform", "rotate(-90)")
-      .attr("y", width + margin.right)
+      .attr("y", width + margin.right/2)
       .attr("x", 0 - (0.5 * height))
       .attr("dy", "1em")
       .style("text-anchor", "middle")
       .style("font-size", "12px")
-      .text(label.v1);
+      .text(label[1]);
 
-
+   // 坐标轴刻度
    svg.append("g")
       .attr("transform", `translate(0,${height})`)
-      .call(xAxis);
+      .call(xAxis)
+      .selectAll("text")
+      .style("text-anchor", "end")
+      .attr("transform", "rotate(-30)")
+      .attr("dx", "-0.8em")
+      .attr("dy", "0.15em");
    svg.append("g")
       .call(yAxisLeft);
    svg.append("g")
@@ -128,28 +151,33 @@ function drawLab(data) {
       .x(d => x(d.x) + x.bandwidth() / 2)
       .y(d => y1(d.y));
 
-   drawLine(svg, data.map(d => ({ x: d.visit, y: d.v0 })), lineV0, "line-v0");
-   drawLine(svg, data.map(d => ({ x: d.visit, y: d.v1 })), lineV1, "line-v1");
+   drawLine(svg, currentData.map(d => ({ x: d.visit, y: d.v0 })), lineV0, "line-v0");
+   if (label.length > 1) {
+      drawLine(svg, currentData.map(d => ({ x: d.visit, y: d.v1 })), lineV1, "line-v1");
+   }
+
 
    svg.selectAll(".dot-v0")
-      .data(data.filter(d => d.v0 !== null))
+      .data(currentData.filter(d => d.v0 !== null))
       .enter().append("circle")
       .attr("class", "dot-v0")
       .attr("cx", d => x(d.visit) + x.bandwidth() / 2)
       .attr("cy", d => y0(d.v0))
       .attr("r", 4);
+
+
    svg.selectAll(".dot-v1")
-      .data(data.filter(d => d.v1 !== null))
+      .data(currentData.filter(d => d.v1 !== null))
       .enter().append("circle")
       .attr("class", "dot-v1")
       .attr("cx", d => x(d.visit) + x.bandwidth() / 2)
       .attr("cy", d => y1(d.v1))
       .attr("r", 4);
 };
-
-function drawBloodPressure(data) {
+// Group2: 共用y轴刻度
+function drawGroup2(data) {
    // 画布
-   const svg = d3.select("div#chart-bloodpressure")
+   const svg = d3.select("div#chart-group2")
       .append('svg')
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)

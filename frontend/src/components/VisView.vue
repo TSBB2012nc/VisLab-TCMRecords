@@ -4,8 +4,8 @@ import { usePatientStore } from '../stores/patientStore';
 
 import StreamView from './StreamView.vue';
 import MapView from './MapView.vue';
-import VisitView from './VisitView.vue';
 import TableView from './TableView.vue';
+import LineView from './LineView.vue';
 
 
 const patientStore = usePatientStore();
@@ -21,7 +21,8 @@ const patient_data = ref({});
 const book_color = ref({});
 const exp_color = ref({});
 const med_data = ref({})
-
+const symp_loc = ref({});  // 症状降维坐标
+const attr_loc = ref({});  // 四气五味降维坐标
 
 
 
@@ -54,15 +55,16 @@ const herb_color = computed(() => {
     const expertCategory = med_data.value[herb]?.['专家分类'];
 
     result[herb] = {
-      '教材分类': book_color.value[bookCategory] || '#000000', // Default to black if not found
-      '专家分类': exp_color.value[expertCategory] || '#000000'  // Default to black if not found
+      '教材分类': book_color.value[bookCategory] || null, // Default to null if not found
+      '专家分类': exp_color.value[expertCategory] || null  // Default to null if not found
     };
   }
 
-  console.log(result)
+  // console.log(result)
   return result;
 });
 
+console.log(herb_color);
 
 // 加载静态数据 *TESTED
 const loadStaticData = async () => {
@@ -70,7 +72,9 @@ const loadStaticData = async () => {
     await Promise.all([
       fetchData('/vis_utils/book_color.json', book_color),
       fetchData('/vis_utils/exp_color.json', exp_color),
-      fetchData('/med_data/med_data.json', med_data)
+      fetchData('/med_data/med_data.json', med_data),
+      fetchData('/vis_utils/symp_loc.json', symp_loc),
+      fetchData('/vis_utils/attr_loc.json', attr_loc)
     ])
     // console.log('Static data loaded')
     // console.log('Book color:', book_color.value)
@@ -84,7 +88,6 @@ const loadStaticData = async () => {
 
 // 加载患者数据 *TESTED
 const loadPatientData = async () => {
-  patientStore.setLoading(true)
   try {
     const currentPatient = patientStore.currentPatient
     console.log(currentPatient);
@@ -103,38 +106,28 @@ const loadPatientData = async () => {
   }
 }
 
-// Add a watcher to log when static data is loaded
-watch([med_data, book_color, exp_color], ([newMed, newBook, newExp]) => {
-  console.log('Static data updated:', {
-    med_data: Object.keys(newMed).length > 0,
-    book_color: Object.keys(newBook).length > 0,
-    exp_color: Object.keys(newExp).length > 0
-  });
-});
-
-// 监听患者变化
+// Watch for patient changes only
 watch(
   () => patientStore.currentPatient,
   async () => {
-    await loadPatientData(); // Reload patient data
-    console.log('Patient data and herb color updated for new patient');
+    await loadPatientData();
   }
-)
+);
 
-
-onMounted(() => {
-  loadStaticData();
-  loadPatientData();
-})
+// Load both static and patient data on mount
+onMounted(async () => {
+  // Load both in parallel
+  await Promise.all([
+    loadStaticData(),
+    loadPatientData()
+  ]);
+});
 </script>
 
 <template>
   <div class="d-flex flex-column w-100">
     <!-- Global loading state -->
     <div v-if="!isStaticDataLoaded || !isPatientDataLoaded" class="global-loading">
-      <div class="alert alert-info">
-        {{ !isStaticDataLoaded ? 'Loading static data...' : 'Loading patient data...' }}
-      </div>
     </div>
     <div v-else>
       <!-- Table View Section -->
@@ -142,27 +135,35 @@ onMounted(() => {
         <TableView :data="patient_data" />
       </div>
       <!-- Stream View Section -->
-      <div class="mt-5">
+      <div class="mt-5" v-if="getHerbCountFlag(patient_data)">
         <StreamView :herbCnt="getHerbCount(patient_data, med_data)" :herbColor="herb_color" />
       </div>
-
-
       <!-- Visit View Section -->
-      <!-- <VisitView :data="visit" :label="visit_info" /> -->
-
+      <div>
+        <LineView v-if="patient_data.visits && patient_data.visits[0]?.metrics" :data="getMetrics(patient_data)" />
+      </div>
+      <div>
+        <MapView v-if="patient_data.herb_set" :herbColor="herb_color" :bookColor="book_color" :expColor="exp_color"
+          :herbSet="patient_data.herb_set" :symp_loc="symp_loc" :attr_loc="attr_loc" />
+      </div>
       <!-- Map View Section -->
-      <!-- <MapView :herbColor="herb_color" :bookColor="book_color" :expColor="exp_color" :herbCnt="herb_cnt[0]" /> -->
+
     </div>
   </div>
 </template>
 <script>
-function getHerbCount(patient_data, med_data) {
-  // Check if required data exists
-  if (!patient_data?.visits || !patient_data?.herb_set) {
-    console.warn('Missing required data for herb count calculation');
-    return [];
-  }
 
+function getHerbCountFlag(patient_data) {
+  if (!patient_data?.visits) {
+    // console.warn('Missing visits data');
+    return false;
+  }
+  return patient_data.visits[0].scripts !== undefined;
+}
+
+function getHerbCount(patient_data, med_data) {
+
+  // console.log(patient_data);
   const herbList = patient_data.herb_set;
   // Sort herbList based on the dictionary order of herbCatExp
   herbList.sort((a, b) => {
@@ -170,7 +171,7 @@ function getHerbCount(patient_data, med_data) {
     const categoryB = med_data[b]?.['专家分类'] || '未知分类';
     return categoryA.localeCompare(categoryB);
   });
-  console.log(herbList);
+  // console.log(herbList);
   const result = [];
 
   // Process each visit
@@ -196,13 +197,23 @@ function getHerbCount(patient_data, med_data) {
     // console.log(visitHerbs);
     result.push(visitHerbs);
   });
-
-  // console.log('Herb count calculated:', {
-  //   visits: result.length,
-  //   herbsPerVisit: Object.keys(result[0] || {}).length
-  // });
-
   return result;
+}
+function getMetrics(patient_data) {
+  // Check if patient_data and visits exist
+  if (!patient_data?.visits) {
+    console.warn('Missing visits data');
+    return [];
+  }
+
+  // Extract required fields from each visit
+  const visitMetrics = patient_data.visits.map(visit => ({
+    visit_num: visit.visit_num,
+    date: visit.date,
+    metrics: visit.metrics
+  }));
+
+  return visitMetrics;
 }
 
 </script>

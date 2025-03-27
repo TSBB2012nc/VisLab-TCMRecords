@@ -9,6 +9,7 @@ const patients = Array.from({ length: 36 }, (_, i) => `patient${i + 1}`);
 // Handle patient selection
 const handlePatientChange = (patient) => {
   patientStore.setCurrentPatient(patient);
+  patientStore.setLoading(true);
   
 };
 

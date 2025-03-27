@@ -15,10 +15,18 @@ const props = defineProps({
         type: Object,
         default: () => ({})
     },
-    herbCnt: {
+    herbSet: {
         type: Object,
         default: () => ({})
-    }
+    },
+    symp_loc: {
+        type: Array,
+        default: () => []
+    },
+    attr_loc: {
+        type: Array,
+        default: () => []
+    },
 });
 
 
@@ -27,44 +35,43 @@ const width = 600;
 const height = 600;
 
 
-onMounted(async () => {
-    try {
-        // 读取数据
-        const [sympLoc, attrLoc] = await Promise.all([
-            d3.json("/symp_loc.json"),
-            d3.json("/attr_loc.json")
-        ]);
+onMounted(() => {
+    cleanMap();
+    const sympData = props.symp_loc
+        .filter(d => d.symp1 !== null && d.symp2 !== null && props.herbSet.includes(d.Name))
+        .map(d => ({ name: d.Name, x: d.symp1, y: d.symp2 }));
+    const attrData = props.attr_loc
+        .filter(d => d.dim1 !== null && d.dim2 !== null && props.herbSet.includes(d.herb_name))
+        .map(d => ({ name: d.herb_name, x: d.dim1, y: d.dim2 }));
+    // console.log(sympData, attrData);
 
-        if (!sympLoc || !attrLoc) {
-            console.error('Failed to load location data');
-            return;
-        }
-        const herbsSelected = new Set(Object.keys(props.herbCnt));
-        const sympdata = sympLoc
-            .filter(d => d.symp1 !== null && d.symp2 !== null && herbsSelected.has(d.Name))
-            .map(d => ({ name: d.Name, x: d.symp1, y: d.symp2 }));
-        const attrdata = attrLoc
-            .filter(d => d.attr1 !== null && d.attr2 !== null && herbsSelected.has(d.Name))
-            .map(d => ({ name: d.Name, x: d.sqww1, y: d.sqww2 }));
-
-
-        // Check if data is valid before drawing
-        if (sympdata.length > 0 && attrdata.length > 0) {
-            drawLegend(height, props);
-            drawMap(sympdata, "#symp-map", width, height, props);
-            drawMap(attrdata, "#attr-map", width, height, props);
-        } else {
-            console.warn('No valid data to display');
-        }
-    } catch (error) {
-        console.error('Error loading or processing data:', error);
+    // Check if sympData is valid before drawing
+    if (sympData.length > 0) {
+        drawMap(sympData, "#symp-map", width, height, props, '症状');
+    } else {
+        console.warn('No valid symptom data to display');
     }
+
+    // Check if attrData is valid before drawing
+    if (attrData.length > 0) {
+        drawMap(attrData, "#attr-map", width, height, props, '四气五味');
+    } else {
+        console.warn('No valid attribute data to display');
+    }
+
+    drawLegend(height, props);
 });
 
+function cleanMap() {
+    d3.select("#symp-map").selectAll("*").remove();
+    d3.select("#attr-map").selectAll("*").remove();
+    d3.select("#legend").selectAll("*").remove();
+}
 
 
+function drawMap(data, div, width, height, props, title) {
+    d3.select(div).append("h5").text(title);
 
-function drawMap(data, div, width, height, props) {
     const svg = d3.select(div)
         .append("svg")
         .attr("width", width)
@@ -177,10 +184,8 @@ function drawLegend(height, props) {
     <div class="container d-flex flex-row">
         <div id="legend"></div>
         <div id="symp-map" class="card">
-            <p class="card-title">症状</p>
         </div>
         <div id="attr-map" class="card ms-5">
-            <p class="card-title">四气五味</p>
         </div>
     </div>
 </template>
