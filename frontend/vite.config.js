@@ -9,6 +9,9 @@ export default defineConfig({
     alias: {
       "@": "/src",
     },
-  }
+  },
+  build: {
+    outDir: "../docs",
+  },
 });
 
