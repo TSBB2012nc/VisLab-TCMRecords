@@ -12,7 +12,8 @@ node_modules
 node_modules/*
 *.local
 
-
+dist/
+dist/*
 
 # Editor directories and files
 .vscode/*

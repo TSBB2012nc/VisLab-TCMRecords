@@ -3,7 +3,7 @@ import vue from "@vitejs/plugin-vue";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: "VisLab-TCMRecords",
+  base: "/VisLab-TCMRecords/docs/",
   plugins: [vue()],
   resolve: {
     alias: {
@@ -14,4 +14,3 @@ export default defineConfig({
     outDir: "../docs",
   },
 });
-
