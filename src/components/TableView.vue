@@ -34,6 +34,7 @@ const tableData = computed(() => {
 const columns = [
     { prop: 'visit_num', label: '诊次', width: '80', align: 'center' },
     { prop: 'date', label: '日期', width: '120' },
+    {prop: 'creatinine', label: '肌酐', width: '100' },
     { prop: 'protein_mg', label: '蛋白量mg', width: '100' },
     { prop: 'protein_qual', label: '蛋白定性', width: '100' },
     { prop: 'blood_qual', label: '血尿定性', width: '100' },

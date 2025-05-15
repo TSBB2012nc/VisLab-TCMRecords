@@ -1,29 +1,41 @@
 <script setup>
-import { computed } from 'vue';
-import { usePatientStore } from '../stores/patientStore';
+import { computed, ref } from 'vue';
+import { patientList, isLoading } from '../services/dataService';
 
-const patientStore = usePatientStore();
-const patients = Array.from({ length: 36 }, (_, i) => `patient${i + 1}`);
+// 从 patientList 中提取 PID 作为选项
+const patients = computed(() => patientList.value.map(patient => patient.PID));
+const selectedPatient = ref(null);
 
 const handlePatientChange = (patient) => {
-  patientStore.setCurrentPatient(patient);
-  patientStore.setLoading(true);
+  emit('change', patient);
 };
 
-const selectedPatient = computed(() => patientStore.currentPatient);
+const emit = defineEmits(['change']);
 </script>
 
 <template>
-  <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-      当前患者：{{ selectedPatient }}
-    </a>
-    <ul class="dropdown-menu dropdown-menu-end" style="max-height: 280px; overflow-y: auto;">
-      <li v-for="patient in patients" :key="patient">
-        <a class="dropdown-item" href="#" @click="handlePatientChange(patient)">
-          {{ patient }}
-        </a>
-      </li>
-    </ul>
-  </li>
+  <div class="patient-selector">
+    <el-select
+      v-model="selectedPatient"
+      @change="handlePatientChange"
+      placeholder="切换患者"
+      size="large"
+      style="width: 160px"
+      :loading="isLoading"
+    >
+      <el-option
+        v-for="pid in patients"
+        :key="pid"
+        :label="pid"
+        :value="pid"
+      />
+    </el-select>
+  </div>
 </template>
+
+<style scoped>
+.patient-selector {
+  display: inline-block;
+  margin: 0 10px;
+}
+</style>

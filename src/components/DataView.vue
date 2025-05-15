@@ -4,7 +4,7 @@
   <div class="page-container">
     <div class="side-controls">
       <el-tooltip content="添加新记录" placement="right">
-        <el-button type="primary" circle @click="addRow">
+        <el-button type="primary" circle @click="handleDisabledFeature('添加')" disabled>
           <el-icon>
             <Plus />
           </el-icon>
@@ -12,7 +12,7 @@
       </el-tooltip>
 
       <el-tooltip content="删除选中记录" placement="right">
-        <el-button type="danger" circle :disabled="!hasSelection" @click="deleteSelected">
+        <el-button type="danger" circle @click="handleDisabledFeature('删除')" disabled>
           <el-icon>
             <Delete />
           </el-icon>
@@ -41,7 +41,7 @@
               <el-button size="small" @click="handleView(scope.row)">
                 查看
               </el-button>
-              <el-button size="small" type="primary" @click="handleEdit(scope.row)">
+              <el-button size="small" type="primary" @click="handleDisabledFeature('编辑')" disabled>
                 编辑
               </el-button>
             </template>
@@ -69,9 +69,8 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import Papa from 'papaparse';
-import type { ElTable } from 'element-plus'
 import { Plus, Delete, DataAnalysis } from '@element-plus/icons-vue'
+import { patientList, isLoading, loadPatientList } from '../services/dataService';
 
 interface Header {
   text: string;
@@ -87,8 +86,6 @@ interface TableItem {
   [key: string]: string;
 }
 
-const loading = ref(true);
-const items = ref<TableItem[]>([]);
 const selectedItems = ref<TableItem[]>([]);
 const showDialog = ref(false);
 const currentItem = ref<Partial<TableItem>>({});
@@ -114,22 +111,6 @@ const getPlaceholder = (field: string) => {
       return 'S';
     default:
       return '';
-  }
-};
-
-const loadCsvData = async () => {
-  try {
-    const response = await fetch('/overview.csv');
-    const csvText = await response.text();
-    const result = Papa.parse(csvText, {
-      header: true,
-      skipEmptyLines: true
-    });
-    items.value = result.data as TableItem[];
-    loading.value = false;
-  } catch (error) {
-    console.error('Error loading CSV:', error);
-    loading.value = false;
   }
 };
 
@@ -200,9 +181,19 @@ const analyzeSelected = () => {
   });
 };
 
+const handleDisabledFeature = (feature: string) => {
+  ElMessage({
+    message: `${feature}功能暂未开放`,
+    type: 'warning'
+  });
+};
+
+const items = computed(() => patientList.value)
+const loading = computed(() => isLoading.value)
+
 onMounted(() => {
-  loadCsvData();
-});
+  loadPatientList()
+})
 </script>
 
 <style scoped>

@@ -1,7 +1,9 @@
 <template>
-   <div class="w-100 d-flex flex-row border-bottom align-items-center mb-2">
-      <i class="fa-solid fa-syringe"></i>
-      <h5 class="ms-2">生理指标</h5>
+   <div class="section-title">
+      <el-icon class="section-icon">
+         <TrendCharts />
+      </el-icon>
+      <span>生理指标</span>
    </div>
    <!-- 测量值 -->
    <div id="chart-group1" class=""></div>
@@ -13,7 +15,7 @@
 
 <script setup>
 import * as d3 from 'd3';
-import { defineProps, onMounted, toRaw } from 'vue';
+import { defineProps, onMounted, toRaw, watch } from 'vue';
 
 const props = defineProps({
    data: {
@@ -33,15 +35,37 @@ onMounted(() => {
    // drawGroup1(data);
    // drawGroup2(data);
 });
+
+// Add watch for data changes
+watch(() => props.data, (newData) => {
+  if (newData && newData.length > 0) {
+    drawMetrics(newData);
+  }
+}, { deep: true });
+
 function clearLine() {
    d3.select("#chart-group1").selectAll("*").remove();
    d3.select("#chart-group2").selectAll("*").remove();
 }
 
+// 添加数据预处理函数
+function preprocessData(rawData) {
+   return rawData.map(d => ({
+      ...d,
+      metrics: {
+         group1: {
+            '肌酐': d.metrics['肌酐'],
+            '蛋白量mg': d.metrics['蛋白量mg']
+         }
+      }
+   }));
+}
+
 function drawMetrics(data) {
+   if (!data || data.length === 0) return;
    clearLine();
-   drawGroup1(data);
-   // drawGroup2(data);
+   const processedData = preprocessData(data);
+   drawGroup1(processedData);
 }
 
 function drawLine(svg, data, lineGenerator, className) {
@@ -79,18 +103,40 @@ function drawLine(svg, data, lineGenerator, className) {
       }
    });
 };
+
+function hasValidData(data, key) {
+   return data.some(d => d.metrics?.group1?.[key] !== null);
+}
+
 // Group1: 双y轴
 function drawGroup1(data) {
+   // 检查数据有效性
+   if (!data[0]?.metrics?.group1) {
+      console.warn('Invalid data format: metrics.group1 is missing');
+      return;
+   }
+
    const label = Object.keys(data[0].metrics.group1);
+   if (label.length === 0) {
+      console.warn('No metrics found in group1');
+      return;
+   }
+
    const currentData = data.map(d => {
       return {
          visit: d.visit_num,
          date: d.date,
-         v0: d.metrics.group1[label[0]],
-         v1: d.metrics.group1[label[1]] !== undefined ? d.metrics.group1[label[1]] : null
+         v0: d.metrics?.group1?.[label[0]] ?? null,
+         v1: d.metrics?.group1?.[label[1]] ?? null
       }
+   });
+
+   // 检查是否所有数据都为null
+   const hasAnyData = currentData.some(d => d.v0 !== null || d.v1 !== null);
+   if (!hasAnyData) {
+      console.warn('All data points are null');
+      return;
    }
-   )
 
    // 画布
    const svg = d3.select("div#chart-group1")
@@ -99,16 +145,27 @@ function drawGroup1(data) {
       .attr("height", height + margin.top + margin.bottom)
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
+
    const x = d3.scaleBand()
       .domain(currentData.map(d => d.visit))
       .range([0, width])
       .padding(0.1);
+
+   // Set default domain if all values are null
    const y0 = d3.scaleLinear()
-      .domain([d3.min(currentData, d => d.v0), d3.max(currentData, d => d.v0)])
+      .domain([
+         hasValidData(data, label[0]) ? d3.min(currentData.filter(d => d.v0 !== null), d => d.v0) || 0 : 0,
+         hasValidData(data, label[0]) ? d3.max(currentData.filter(d => d.v0 !== null), d => d.v0) || 100 : 100
+      ])
       .range([height, 0]);
+
    const y1 = d3.scaleLinear()
-      .domain([d3.min(currentData, d => d.v1), d3.max(currentData, d => d.v1)])
+      .domain([
+         hasValidData(data, label[1]) ? d3.min(currentData.filter(d => d.v1 !== null), d => d.v1) || 0 : 0,
+         hasValidData(data, label[1]) ? d3.max(currentData.filter(d => d.v1 !== null), d => d.v1) || 100 : 100
+      ])
       .range([height, 0]);
+
    const xAxis = d3.axisBottom(x).tickFormat(d => currentData.find(item => item.visit === d).date);
    const yAxisLeft = d3.axisLeft(y0);
    const yAxisRight = d3.axisRight(y1);
@@ -123,7 +180,7 @@ function drawGroup1(data) {
       .text(label[0]);
    svg.append("text")
       .attr("transform", "rotate(-90)")
-      .attr("y", width + margin.right/2)
+      .attr("y", width + margin.right / 2)
       .attr("x", 0 - (0.5 * height))
       .attr("dy", "1em")
       .style("text-anchor", "middle")
@@ -151,29 +208,30 @@ function drawGroup1(data) {
       .x(d => x(d.x) + x.bandwidth() / 2)
       .y(d => y1(d.y));
 
-   drawLine(svg, currentData.map(d => ({ x: d.visit, y: d.v0 })), lineV0, "line-v0");
-   if (label.length > 1) {
-      drawLine(svg, currentData.map(d => ({ x: d.visit, y: d.v1 })), lineV1, "line-v1");
+   // Only draw lines if there is valid data
+   if (hasValidData(data, label[0])) {
+      drawLine(svg, currentData.map(d => ({ x: d.visit, y: d.v0 })), lineV0, "line-v0");
+      svg.selectAll(".dot-v0")
+         .data(currentData.filter(d => d.v0 !== null))
+         .enter().append("circle")
+         .attr("class", "dot-v0")
+         .attr("cx", d => x(d.visit) + x.bandwidth() / 2)
+         .attr("cy", d => y0(d.v0))
+         .attr("r", 4);
    }
 
+   if (label.length > 1 && hasValidData(data, label[1])) {
+      drawLine(svg, currentData.map(d => ({ x: d.visit, y: d.v1 })), lineV1, "line-v1");
+      svg.selectAll(".dot-v1")
+         .data(currentData.filter(d => d.v1 !== null))
+         .enter().append("circle")
+         .attr("class", "dot-v1")
+         .attr("cx", d => x(d.visit) + x.bandwidth() / 2)
+         .attr("cy", d => y1(d.v1))
+         .attr("r", 4);
+   }
+}
 
-   svg.selectAll(".dot-v0")
-      .data(currentData.filter(d => d.v0 !== null))
-      .enter().append("circle")
-      .attr("class", "dot-v0")
-      .attr("cx", d => x(d.visit) + x.bandwidth() / 2)
-      .attr("cy", d => y0(d.v0))
-      .attr("r", 4);
-
-
-   svg.selectAll(".dot-v1")
-      .data(currentData.filter(d => d.v1 !== null))
-      .enter().append("circle")
-      .attr("class", "dot-v1")
-      .attr("cx", d => x(d.visit) + x.bandwidth() / 2)
-      .attr("cy", d => y1(d.v1))
-      .attr("r", 4);
-};
 // Group2: 共用y轴刻度
 function drawGroup2(data) {
    // 画布

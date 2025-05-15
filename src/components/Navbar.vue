@@ -1,25 +1,27 @@
 <script setup>
-import { ref } from 'vue'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import PatientSelector from './PatientSelector.vue';
+import PatientSelector from './PatientSelector.vue'
+import { loadPatientList } from '../services/dataService'
 
 const router = useRouter()
+const props = defineProps({
+  showPatientSelector: Boolean
+})
 
-
-defineProps({
-  showPatientSelector: {
-    type: Boolean,
-    default: true
+const handlePatientChange = (patientId) => {
+  if (patientId) {
+    router.push(`/patient/${patientId}`)
   }
-});
+}
+
+onMounted(async () => {
+  await loadPatientList()
+})
 </script>
 
 <template>
-  <el-menu
-    class="navbar"
-    mode="horizontal"
-    :ellipsis="false"
-  >
+  <el-menu class="navbar" mode="horizontal" :ellipsis="false">
     <el-menu-item index="0">
       <el-text class="title" size="large">中医病案可视分析</el-text>
     </el-menu-item>
@@ -28,7 +30,10 @@ defineProps({
       <a href="/" class="link">数据面板</a>
     </el-menu-item>
     <el-menu-item index="2">
-      <PatientSelector v-if="showPatientSelector" />
+      <PatientSelector 
+        v-if="showPatientSelector" 
+        @change="handlePatientChange"
+      />
     </el-menu-item>
   </el-menu>
 </template>

@@ -161,7 +161,7 @@ const processedPatientData = computed(() => {
       </div>
       <!-- Visit View Section -->
       <div>
-        <LineView v-if="patient_data.visits && patient_data.visits[0]?.metrics" :data="getMetrics(patient_data)" />
+        <LineView :data="getMetrics(patient_data)" />
       </div>
       <!-- Map View Section -->
       <div>
@@ -176,20 +176,23 @@ const processedPatientData = computed(() => {
 
 
 function getMetrics(patient_data) {
-  // Check if patient_data and visits exist
-  if (!patient_data?.visits) {
-    console.warn('Missing visits data');
+  // 检查输入数据是否有效
+  if (!patient_data || typeof patient_data !== 'object') {
+    console.warn('Invalid patient_data');
     return [];
   }
 
-  // Extract required fields from each visit
-  const visitMetrics = patient_data.visits.map(visit => ({
-    visit_num: visit.visit_num,
-    date: visit.date,
-    metrics: visit.metrics
-  }));
-
-  return visitMetrics;
+  try {
+    // 转换数据为所需格式
+    return Object.entries(patient_data).map(([visit_num, data]) => ({
+      visit_num: parseInt(visit_num),
+      date: data.date,
+      metrics: data.metrics || {}
+    })).sort((a, b) => a.visit_num - b.visit_num);
+  } catch (error) {
+    console.error('Error processing metrics data:', error);
+    return [];
+  }
 }
 
 function getStreamData(patient_data) {
