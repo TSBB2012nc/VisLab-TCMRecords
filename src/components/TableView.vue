@@ -1,6 +1,6 @@
 <script setup>
-import { defineProps, onMounted, toRaw, computed, ref } from 'vue';
-
+import { defineProps, computed } from 'vue';
+import { DataLine } from '@element-plus/icons-vue'
 
 const props = defineProps({
     data: {
@@ -9,109 +9,82 @@ const props = defineProps({
     },
 });
 
-onMounted(() => {
-    // console.log('TableView mounted');
+const tableData = computed(() => {
+    return Object.entries(props.data).map(([index, visit]) => {
+        const scriptsText = Object.entries(visit.scripts || {})
+            .map(([name, info]) => `${name}(${info.amount})`)
+            .join('、');
+        
+        return {
+            visit_num: parseInt(index) + 1,
+            date: visit.date,
+            creatinine: visit.metrics?.肌酐 ?? '/',
+            protein_mg: visit.metrics?.蛋白量mg ?? '/',
+            protein_qual: visit.metrics?.蛋白定性 ?? '/',
+            blood_qual: visit.metrics?.血尿定性 ?? '/',
+            scripts: scriptsText,
+            herb_count: visit.味数,
+            dose_count: visit.剂数,
+            frequency: visit.频次 || '/',
+            route: visit.途径
+        };
+    });
 });
+
+const columns = [
+    { prop: 'visit_num', label: '诊次', width: '80', align: 'center' },
+    { prop: 'date', label: '日期', width: '120' },
+    { prop: 'protein_mg', label: '蛋白量mg', width: '100' },
+    { prop: 'protein_qual', label: '蛋白定性', width: '100' },
+    { prop: 'blood_qual', label: '血尿定性', width: '100' },
+    { prop: 'scripts', label: '药方', minWidth: '300' },
+    { prop: 'herb_count', label: '味数', width: '80' },
+    { prop: 'dose_count', label: '剂数', width: '80' },
+    { prop: 'frequency', label: '频次', width: '80' },
+    { prop: 'route', label: '途径', width: '120' }
+];
 </script>
+
 <template>
     <div class="container-fluid p-0">
-        <div class="w-100 d-flex flex-row border-bottom align-items-center mb-2">
-            <i class="fa fa-table"></i>
-            <h5 class="ms-2">表格数据</h5>
+        <div class="section-title">
+            <el-icon class="section-icon"><List /></el-icon>
+            <span>看诊数据</span>
         </div>
         
-        <!-- Data table -->
-        <div class="table-responsive">
-            <table class="table table-sm table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th scope="col" class="text-center">序号</th>
-                        <th scope="col">日期</th>
-                        <th scope="col">药方</th>
-                        <th v-for="col in getColumnNames(data)" :key="col" scope="col">
-                            {{ col }}
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="visit in data.visits" :key="visit.visit_num">
-                        <th scope="row" class="text-center">{{ visit.visit_num + 1 }}</th>
-                        <td>{{ visit.date }}</td>
-                        <td>{{ visit.scripts }}</td>
-                        <td v-for="col in getColumnNames(data)" :key="col">
-                            {{ getMetricValue(col, visit) }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <el-table
+            class="visit-table"
+            :data="tableData"
+            height="500"
+            :border="true"
+            stripe
+        >
+            <el-table-column
+                v-for="col in columns"
+                :key="col.prop"
+                :prop="col.prop"
+                :label="col.label"
+                :width="col.width"
+                :min-width="col.minWidth"
+                :align="col.align"
+            />
+        </el-table>
     </div>
-
 </template>
-<script>
-function getColumnNames(data) {
-    // Get all keys from all metric groups
-    const allKeys = new Set();
-    const metrics = data.visits?.[0]?.metrics || {};
-    if (!metrics) {
-        return [];
-    }
 
-    // Iterate through each group (group1, group2, etc.)
-    Object.values(metrics).forEach(group => {
-        // Add each key from the group to our Set
-        Object.keys(group).forEach(key => allKeys.add(key));
-    });
-
-    return Array.from(allKeys);
-}
-
-function getMetricValue(key, visit) {
-    // Merge all metric values from all groups
-    const mergedMetrics = Object.values(visit.metrics).reduce((acc, group) => {
-        return { ...acc, ...group };
-    }, {});
-
-    // Return the value for the specified key
-    return mergedMetrics[key] ?? '';
-}
-
-</script>
 <style scoped>
-.table-responsive {
-    width: 100% !important;
-    height: 300px;
-    /* 固定高度 */
-    overflow-y: auto;
-    /* 垂直滚动 */
-    overflow-x: auto;
-    /* 水平滚动 */
+
+
+.visit-table {
+    width: 90%;
+    margin: auto;
 }
 
-.table {
-    width: 100% !important;
-    /* 强制宽度100% */
-    margin-bottom: 0;
+.el-table {
+    --el-table-header-bg-color: var(--el-fill-color-light);
 }
 
-.table th {
+.el-table .cell {
     white-space: nowrap;
-    position: sticky;
-    top: 0;
-    background: #f8f9fa;
-    z-index: 1;
-}
-
-/* 保持表头宽度与内容列对齐 */
-.table th,
-.table td {
-    min-width: 100px;
-    /* 设置最小宽度 */
-}
-
-/* 第一列序号列宽度可以小一些 */
-.table th:first-child,
-.table td:first-child {
-    min-width: 60px;
 }
 </style>

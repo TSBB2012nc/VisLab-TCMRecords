@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { usePatientStore } from '../stores/patientStore';
 
 import StreamView from './StreamView.vue';
@@ -24,8 +25,7 @@ const med_data = ref({})
 const symp_loc = ref({});  // 症状降维坐标
 const attr_loc = ref({});  // 四气五味降维坐标
 
-
-
+const route = useRoute();
 
 // fetchData utility function *TESTED
 const fetchData = async (url, targetRef) => {
@@ -67,9 +67,7 @@ const herbColor = computed(() => {
   return result;
 });
 
-const useHerbColor = computed(() => {
-  return filterHerbColor(patient_data.value.herb_set, herbColor.value);
-});
+
 
 // 加载静态数据 *TESTED
 const loadStaticData = async () => {
@@ -94,20 +92,21 @@ const loadStaticData = async () => {
 // 加载患者数据 *TESTED
 const loadPatientData = async () => {
   try {
-    const currentPatient = patientStore.currentPatient
-    console.log(currentPatient);
+    const patientId = route.params.id || patientStore.currentPatient;
+    console.log('Loading patient data for ID:', patientId);
+
     // 重置patient数据
     patient_data.value = {};
     // 加载新数据
     await Promise.all([
-      fetchData(`patient_data/${currentPatient}.json`, patient_data),
+      fetchData(`patient/${patientId}.json`, patient_data),
     ]);
-    // console.log('Patient data loaded:', patient_data.value)
+    console.log('Patient data loaded:', patient_data.value);
     isPatientDataLoaded.value = true;
   } catch (error) {
-    console.error('Error loading patient data:', error)
+    console.error('Error loading patient data:', error);
   } finally {
-    patientStore.setLoading(false)
+    patientStore.setLoading(false);
   }
 }
 
@@ -119,6 +118,16 @@ watch(
   }
 );
 
+// 添加对路由参数的监听
+watch(
+  () => route.params.id,
+  async (newId) => {
+    if (newId) {
+      await loadPatientData();
+    }
+  }
+);
+
 // Load both static and patient data on mount
 onMounted(async () => {
   // Load both in parallel
@@ -127,6 +136,13 @@ onMounted(async () => {
     loadPatientData()
   ]);
 });
+
+const processedPatientData = computed(() => {
+  // Return early if data is not loaded
+  if (!patient_data.value) return {};
+  return patient_data.value;
+});
+
 </script>
 
 <template>
@@ -135,13 +151,13 @@ onMounted(async () => {
     <div v-if="!isStaticDataLoaded || !isPatientDataLoaded" class="global-loading">
     </div>
     <div v-else>
-      <!-- Table View Section -->
-      <div class="w-100">
-        <TableView :data="patient_data" />
+      <!-- Table View Section - Updated -->
+      <div class="w-80">
+        <TableView :data="processedPatientData" />
       </div>
       <!-- Stream View Section -->
-      <div class="mt-5" v-if="getHerbCountFlag(patient_data)">
-        <StreamView :herbCnt="getHerbCount(patient_data, med_data)" :herbColor="useHerbColor" />
+      <div class="mt-5">
+        <StreamView :streamData="getStreamData(patient_data)" :herbColor="herbColor" />
       </div>
       <!-- Visit View Section -->
       <div>
@@ -157,60 +173,8 @@ onMounted(async () => {
   </div>
 </template>
 <script>
-function filterHerbColor(herbSet, herbColor) {
-  const result = {};
-  for (const herb of herbSet) {
-    result[herb] = herbColor[herb];
-  }
-  return result;
-}
-
-function getHerbCountFlag(patient_data) {
-  if (!patient_data?.visits) {
-    // console.warn('Missing visits data');
-    return false;
-  }
-  return patient_data.visits[0].scripts !== undefined;
-}
-
-function getHerbCount(patient_data, med_data) {
-
-  // console.log(patient_data);
-  const herbList = patient_data.herb_set;
-  // Sort herbList based on the dictionary order of herbCatExp
-  herbList.sort((a, b) => {
-    const categoryA = med_data[a]?.['专家分类'] || '未知分类';
-    const categoryB = med_data[b]?.['专家分类'] || '未知分类';
-    return categoryA.localeCompare(categoryB);
-  });
-  // console.log(herbList);
-  const result = [];
-
-  // Process each visit
-  patient_data.visits.forEach(visit => {
-    // Initialize herb count object for this visit
-    const visitHerbs = {
-      'visit': visit.visit_num
-    };
-
-    // Initialize all herbs with 0
-    herbList.forEach(herb => {
-      visitHerbs[herb] = 0;
-    });
 
 
-    var currentScripts = visit.scripts;
-    // console.log(currentScripts);
-
-    // 使用currentScripts的键值对更新visitHerbs
-    for (const [key, value] of Object.entries(currentScripts)) {
-      visitHerbs[key] = value;
-    }
-    // console.log(visitHerbs);
-    result.push(visitHerbs);
-  });
-  return result;
-}
 function getMetrics(patient_data) {
   // Check if patient_data and visits exist
   if (!patient_data?.visits) {
@@ -226,6 +190,26 @@ function getMetrics(patient_data) {
   }));
 
   return visitMetrics;
+}
+
+function getStreamData(patient_data) {
+  // 检查输入数据是否有效
+  if (!patient_data || typeof patient_data !== 'object') {
+    console.warn('Invalid patient_data');
+    return [];
+  }
+
+  try {
+    // Map patient_data directly to the required format
+    return Object.entries(patient_data).map(([visit_num, data]) => ({
+      visit_num: parseInt(visit_num),
+      date: data.date,
+      scripts: data.scripts
+    }));
+  } catch (error) {
+    console.error('Error processing patient data:', error);
+    return [];
+  }
 }
 
 </script>
