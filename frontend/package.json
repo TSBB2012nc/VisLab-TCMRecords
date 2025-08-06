@@ -1,0 +1,33 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "vite build && gh-pages -d dist"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "@types/papaparse": "^5.3.16",
+    "d3": "^7.9.0",
+    "element-plus": "^2.9.10",
+    "papaparse": "^5.5.2",
+    "pinia": "^3.0.1",
+    "vue": "^3.5.12",
+    "vue-router": "^4.5.0",
+    "vue3-easy-data-table": "^1.5.47"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^8.2.2",
+    "gh-pages": "^6.3.0",
+    "postcss": "^8.5.1",
+    "sass": "^1.80.6",
+    "tailwindcss": "^4.0.5",
+    "vite": "^5.4.10"
+  }
+}

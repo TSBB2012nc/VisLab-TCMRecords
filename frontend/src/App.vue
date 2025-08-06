@@ -21,7 +21,8 @@ const showPatientSelector = computed(() => route.path.startsWith('/patient/'));
 
 <style scoped>
 main {
-  padding: 1rem;
-  width: 100%;
+  width: 90%;
+  margin: auto;
+  margin-top: 5rem;
 }
 </style>

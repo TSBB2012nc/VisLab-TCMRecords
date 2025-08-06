@@ -25,6 +25,8 @@
 
 #app {
   width: 100%;
+  margin: 0;
+  text-align: center;
 }
 
 a {
@@ -92,11 +94,6 @@ button:focus-visible {
   color: var(--el-text-color-primary);
 }
 
-#app {
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
 
 @media (prefers-color-scheme: light) {
   :root {
