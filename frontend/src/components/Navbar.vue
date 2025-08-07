@@ -27,9 +27,12 @@ onMounted(async () => {
     </el-menu-item>
     <div class="flex-grow" />
     <el-menu-item index="1">
-      <a href="/" class="link">数据面板</a>
+      <router-link to="/" class="link">数据面板</router-link>
     </el-menu-item>
     <el-menu-item index="2">
+      <router-link to="/va" class="link">可视分析</router-link>
+    </el-menu-item>
+    <el-menu-item index="3">
       <PatientSelector 
         v-if="showPatientSelector" 
         @change="handlePatientChange"
@@ -55,5 +58,14 @@ onMounted(async () => {
 .title {
   font-size: 18px;
   font-weight: bold;
+}
+
+.link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.link:hover {
+  color: #409eff;
 }
 </style>

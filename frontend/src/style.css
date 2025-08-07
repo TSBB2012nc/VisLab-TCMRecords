@@ -23,6 +23,9 @@
 
 }
 
+/* 引入可视化样式 */
+@import './styles/visualizations.css';
+
 #app {
   width: 100%;
   margin: 0;

@@ -1,0 +1,102 @@
+/* 可视化图表全局样式 */
+
+/* 无数据占位符样式 */
+.no-data-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background-color: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+.no-data-placeholder .title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.no-data-placeholder .subtitle {
+    font-size: 12px;
+    color: #adb5bd;
+}
+
+/* StreamChart 样式 */
+.layer {
+    stroke: none;
+    stroke-width: 1px;
+}
+
+.label {
+    pointer-events: none;
+    font-size: 10px;
+    fill: #000;
+}
+
+/* LineChart 样式 */
+path.line-v0 {
+    fill: none;
+    stroke: steelblue;
+    stroke-width: 2.5px;
+}
+
+path.line-v1 {
+    fill: none;
+    stroke: orange;
+    stroke-width: 2.5px;
+}
+
+circle.dot-v0 {
+    fill: steelblue;
+}
+
+circle.dot-v1 {
+    fill: orange;
+}
+
+path.dashed {
+    stroke: gray !important;
+    stroke-width: 2.5px;
+    stroke-dasharray: 5, 5;
+}
+
+/* MapChart 样式 */
+.base {
+    cursor: pointer;
+}
+
+/* 通用图表样式 */
+.section-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-weight: bold;
+}
+
+.section-icon {
+    margin-right: 0.5rem;
+}
+
+/* 图表容器样式 */
+#chart-stream,
+#chart-group1,
+#chart-group2,
+#symp-map,
+#attr-map {
+    width: 100%;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .section-title {
+        font-size: 0.9rem;
+    }
+    
+    .label {
+        font-size: 8px;
+    }
+}

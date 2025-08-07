@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import DataView from '../components/DataView.vue';
 import VisView from '../components/VisView.vue';
 import EnsembleView from '../components/EnsembleView.vue';
+import VAView from '../components/VAView.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -19,6 +20,11 @@ const routes: Array<RouteRecordRaw> = [
     name: 'EnsembleView',
     component: EnsembleView,
     props: route => ({ patientIds: route.query.ids })
+  },
+  {
+    path: '/va',
+    name: 'VAView',
+    component: VAView
   }
 ];
 
