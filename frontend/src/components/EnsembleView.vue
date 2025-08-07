@@ -181,10 +181,10 @@ const props = defineProps<{
 }>();
 
 // Loading states
-const isPatientDataLoaded = ref(false);
+const isPatientDataLoaded = computed(() => globalIsPatientDataLoaded.value);
 
 // Data refs
-const patientDataMap = ref<Record<string, PatientData>>({});
+const patientDataMap = computed(() => globalPatientDataMap.value);
 
 const patientIdList = computed(() => {
   return props.patientIds ? props.patientIds.split(",") : [];
@@ -196,7 +196,6 @@ const selectedCategory = ref<string>("");
 // Load patient data
 const loadPatientData = async () => {
   try {
-    isPatientDataLoaded.value = false;
     if (patientIdList.value.length === 0) {
       console.error('No patient IDs provided');
       return;
@@ -204,25 +203,18 @@ const loadPatientData = async () => {
     
     // Use the new API function
     await loadApiPatientData(patientIdList.value);
-    
-    // Copy data from global state to local state for this component
-    patientDataMap.value = { ...globalPatientDataMap.value };
-    isPatientDataLoaded.value = true;
   } catch (error) {
     console.error("Error loading patient data:", error);
-    isPatientDataLoaded.value = false;
   }
 };
 
 // Add herbColor computed property
 const herbColor = computed<HerbColorMap>(() => {
   if (!isStaticDataLoaded.value || !isPatientDataLoaded.value) {
-    console.log("Waiting for all data to load...");
     return {};
   }
 
   if (!medData.value || !bookColor.value || !expColor.value) {
-    console.log("Missing required color data");
     return {};
   }
 
@@ -314,11 +306,16 @@ const calculateStats = () => {
   const stats: Record<string, any[]> = {};
 
   allCategories.value.forEach((category) => {
-    stats[category] = calculateHerbStats(
-      patientDataMap.value,
-      herbColor.value,
-      category
-    );
+    try {
+      stats[category] = calculateHerbStats(
+        patientDataMap.value,
+        herbColor.value,
+        category
+      );
+    } catch (error) {
+      console.error(`Error calculating stats for category ${category}:`, error);
+      stats[category] = [];
+    }
   });
 
   categoryStats.value = stats;
@@ -352,7 +349,7 @@ const drawOverlayStream = () => {
   // 计算所有类别的数据范围
   categoriesToDraw.forEach((category) => {
     Object.values(patientDataMap.value).forEach((patientData) => {
-      const streamData = getStreamData(patientData);
+      const streamData = getStreamData(patientData as PatientData);
       const categorizedHerbs = categorizeHerbs(streamData, herbColor.value);
       const categoryHerbs = categorizedHerbs.get(category) || [];
 
@@ -422,7 +419,7 @@ const drawOverlayStream = () => {
     const opacity = 1.0 / patientCount;
 
     Object.values(patientDataMap.value).forEach((patientData) => {
-      const streamData = getStreamData(patientData);
+      const streamData = getStreamData(patientData as PatientData);
       const categorizedHerbs = categorizeHerbs(streamData, herbColor.value);
       const categoryHerbs = categorizedHerbs.get(category) || [];
 

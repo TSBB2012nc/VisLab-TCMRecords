@@ -32,13 +32,11 @@ const patient_data = ref({});
 // 计算中药的类型和颜色
 const herbColor = computed(() => {
   if (!isStaticDataLoaded.value || !isPatientDataLoaded.value) {
-    console.log('Waiting for all data to load...');
     return {};
   }
 
   // Check if all required data is loaded
   if (!medData.value || !bookColor.value || !expColor.value) {
-    console.log('Missing required color data');
     return {};
   }
 
@@ -65,7 +63,6 @@ const useHerbColor = computed(() => herbColor.value);
 const loadStaticData = async () => {
   try {
     await loadApiStaticData();
-    console.log('Static data loaded successfully');
   } catch (error) {
     console.error('Error loading static data:', error);
   }
@@ -86,7 +83,6 @@ const loadPatientData = async () => {
     if (data) {
       patient_data.value = data;
       isPatientDataLoaded.value = true;
-      console.log('Patient data loaded successfully for:', patientId);
     } else {
       console.error('No data returned for patient:', patientId);
     }
@@ -100,7 +96,7 @@ const loadPatientData = async () => {
 const checkApiConnection = async () => {
   try {
     const health = await checkApiHealth();
-    if (health.status === 'OK') {
+    if (health.status === 'healthy') {
       apiStatus.value = 'connected';
     } else {
       apiStatus.value = 'error';
@@ -148,6 +144,41 @@ onMounted(async () => {
 const processedPatientData = computed(() => {
   // Return early if data is not loaded
   if (!patient_data.value) return {};
+  
+  // 处理新的API格式：{ patient_id: "001", timeline: [...] }
+  if (patient_data.value.timeline && Array.isArray(patient_data.value.timeline)) {
+    const processedData = {};
+    patient_data.value.timeline.forEach((timelineEntry, index) => {
+      // 将herbs数组转换为scripts对象格式
+      const scripts = {};
+      if (timelineEntry.herbs && Array.isArray(timelineEntry.herbs)) {
+        timelineEntry.herbs.forEach(herb => {
+          scripts[herb.name] = {
+            amount: herb.amount,
+            raw_name: herb.raw_name
+          };
+        });
+      }
+      
+      processedData[index] = {
+        date: timelineEntry.date,
+        metrics: {
+          '肌酐': timelineEntry['肌酐'],
+          '蛋白量mg': timelineEntry['蛋白量mg'],
+          '蛋白定性': timelineEntry['蛋白定性'],
+          '血尿定性': timelineEntry['血尿定性']
+        },
+        scripts: scripts,
+        '味数': timelineEntry['味数'],
+        '剂数': timelineEntry['剂数'],
+        '频次': timelineEntry['频次'] || '/',
+        '途径': timelineEntry['途径'] || '/'
+      };
+    });
+    return processedData;
+  }
+  
+  // 兼容旧格式
   return patient_data.value;
 });
 
@@ -160,7 +191,21 @@ function getMetrics(patient_data) {
   }
 
   try {
-    // 转换数据为所需格式
+    // 处理新的API格式：{ patient_id: "001", timeline: [...] }
+    if (patient_data.timeline && Array.isArray(patient_data.timeline)) {
+      return patient_data.timeline.map((timelineEntry, index) => ({
+        visit_num: index, // 使用索引作为visit_num
+        date: timelineEntry.date,
+        metrics: {
+          '肌酐': timelineEntry['肌酐'],
+          '蛋白量mg': timelineEntry['蛋白量mg'],
+          '蛋白定性': timelineEntry['蛋白定性'],
+          '血尿定性': timelineEntry['血尿定性']
+        }
+      }));
+    }
+    
+    // 兼容旧格式：Object.entries for visit-based data
     return Object.entries(patient_data).map(([visit_num, data]) => ({
       visit_num: parseInt(visit_num),
       date: data.date,
@@ -180,17 +225,61 @@ function getStreamData(patient_data) {
   }
 
   try {
-    // Map patient_data directly to the required format
-    return Object.entries(patient_data).map(([visit_num, data]) => ({
-      visit_num: parseInt(visit_num),
-      date: data.date,
-      herb: data.herb || [],
-      symp: data.symp || []
-    })).sort((a, b) => a.visit_num - b.visit_num);
+    // 处理新的API格式：{ patient_id: "001", timeline: [...] }
+    if (patient_data.timeline && Array.isArray(patient_data.timeline)) {
+      const result = patient_data.timeline.map((timelineEntry, index) => {
+        // 将herbs数组转换为scripts对象格式
+        const scripts = {};
+        if (timelineEntry.herbs && Array.isArray(timelineEntry.herbs)) {
+          timelineEntry.herbs.forEach(herb => {
+            scripts[herb.name] = {
+              amount: herb.amount,
+              raw_name: herb.raw_name
+            };
+          });
+        }
+        
+        return {
+          visit_num: index, // 使用索引作为visit_num
+          date: timelineEntry.date,
+          scripts: scripts
+        };
+      });
+      
+      return result;
+    }
+    
+    // 兼容旧格式：Object.entries for visit-based data
+    const result = Object.entries(patient_data).map(([visit_num, data]) => {
+      return {
+        visit_num: parseInt(visit_num),
+        date: data.date,
+        scripts: data.scripts || {}
+      };
+    }).sort((a, b) => a.visit_num - b.visit_num);
+    
+    return result;
   } catch (error) {
     console.error('Error processing stream data:', error);
     return [];
   }
+}
+
+function getAllHerbsFromTimeline(patient_data) {
+  if (!patient_data || !patient_data.timeline || !Array.isArray(patient_data.timeline)) {
+    return [];
+  }
+  
+  const allHerbs = new Set();
+  patient_data.timeline.forEach(timelineEntry => {
+    if (timelineEntry.herbs && Array.isArray(timelineEntry.herbs)) {
+      timelineEntry.herbs.forEach(herb => {
+        allHerbs.add(herb.name);
+      });
+    }
+  });
+  
+  return Array.from(allHerbs);
 }
 </script>
 
@@ -198,7 +287,7 @@ function getStreamData(patient_data) {
   <div class="d-flex flex-column w-100">
     <!-- API Status Alert -->
     <div v-if="apiStatus === 'error'" class="alert alert-warning">
-      ⚠️ 无法连接到后端服务器，请确保后端服务正在运行（端口3001）
+      ⚠️ 无法连接到后端服务器，请确保后端服务正在运行（端口8000）
     </div>
 
     <!-- Global loading state -->
@@ -225,11 +314,11 @@ function getStreamData(patient_data) {
       <!-- Map View Section -->
       <div>
         <MapView 
-          v-if="patient_data.herb_set" 
+          v-if="patient_data.timeline && patient_data.timeline.length > 0" 
           :herbColor="useHerbColor" 
           :bookColor="bookColor" 
           :expColor="expColor"
-          :herbSet="patient_data.herb_set" 
+          :herbSet="getAllHerbsFromTimeline(patient_data)" 
           :symp_loc="sympLoc" 
           :attr_loc="attrLoc" 
         />

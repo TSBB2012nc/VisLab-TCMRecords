@@ -27,7 +27,11 @@ export const calculateHerbStats = (
 
   // Initialize stats for all herbs in the category
   Object.values(patientDataMap).forEach(patientData => {
+    if (!patientData || typeof patientData !== 'object') return;
+    
     Object.entries(patientData).forEach(([visitIndex, visit]) => {
+      if (!visit || !visit.scripts || typeof visit.scripts !== 'object') return;
+      
       Object.keys(visit.scripts).forEach(herb => {
         if (herbColorMap[herb]?.book_category === category && !herbStats[herb]) {
           herbStats[herb] = {
@@ -43,13 +47,18 @@ export const calculateHerbStats = (
 
   // Calculate statistics
   Object.entries(patientDataMap).forEach(([patientId, patientData]) => {
+    if (!patientData || typeof patientData !== 'object') return;
+    
     const visitCount = Object.keys(patientData).length;
     
     Object.entries(patientData).forEach(([visitIndex, visit]) => {
-      const stageIndex = getStageIndex(Number(visitIndex), visitCount);
+      if (!visit || !visit.scripts || typeof visit.scripts !== 'object') return;
+      
+      const stageIndex = getStageIndex(Number(visitIndex) - 1, visitCount); // 修正索引计算
       
       Object.entries(visit.scripts).forEach(([herb, data]) => {
-        if (herbStats[herb]) {
+        // 确保 herbStats[herb] 存在再访问
+        if (herbStats[herb] && herbColorMap[herb]?.book_category === category) {
           herbStats[herb].totalCount++;
           herbStats[herb].patients.add(patientId);
           herbStats[herb].stages[stageIndex].add(patientId);

@@ -1,6 +1,6 @@
 <script setup>
 import { defineProps, computed } from 'vue';
-import { DataLine } from '@element-plus/icons-vue'
+import { List } from '@element-plus/icons-vue'
 
 const props = defineProps({
     data: {
@@ -10,23 +10,33 @@ const props = defineProps({
 });
 
 const tableData = computed(() => {
+    if (!props.data || typeof props.data !== 'object') {
+        return [];
+    }
+    
     return Object.entries(props.data).map(([index, visit]) => {
-        const scriptsText = Object.entries(visit.scripts || {})
-            .map(([name, info]) => `${name}(${info.amount})`)
-            .join('、');
+        if (!visit || typeof visit !== 'object') {
+            return {};
+        }
+        
+        const scriptsText = visit.scripts && typeof visit.scripts === 'object' 
+            ? Object.entries(visit.scripts)
+                .map(([name, info]) => `${name}(${info?.amount || 0})`)
+                .join('、')
+            : '';
         
         return {
             visit_num: parseInt(index) + 1,
-            date: visit.date,
+            date: visit.date || '/',
             creatinine: visit.metrics?.肌酐 ?? '/',
             protein_mg: visit.metrics?.蛋白量mg ?? '/',
             protein_qual: visit.metrics?.蛋白定性 ?? '/',
             blood_qual: visit.metrics?.血尿定性 ?? '/',
             scripts: scriptsText,
-            herb_count: visit.味数,
-            dose_count: visit.剂数,
+            herb_count: visit.味数 || '/',
+            dose_count: visit.剂数 || '/',
             frequency: visit.频次 || '/',
-            route: visit.途径
+            route: visit.途径 || '/'
         };
     });
 });

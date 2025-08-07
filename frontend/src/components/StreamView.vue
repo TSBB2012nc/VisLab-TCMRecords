@@ -1,6 +1,7 @@
 <script setup>
 import { defineProps, onMounted, watch, ref } from 'vue';
 import * as d3 from 'd3';
+import { TrendCharts } from '@element-plus/icons-vue';
 
 const props = defineProps({
     streamData: {
@@ -29,9 +30,12 @@ const processData = (rawData) => {
             };
         }
         
-        Object.keys(scripts).forEach(herb => {
-            herbDataMap[visitNum].herbs[herb] = scripts[herb].amount || 0;
-        });
+        // Add null check for scripts
+        if (scripts && typeof scripts === 'object') {
+            Object.keys(scripts).forEach(herb => {
+                herbDataMap[visitNum].herbs[herb] = scripts[herb].amount || 0;
+            });
+        }
     });
     
     const allHerbs = new Set();
@@ -73,6 +77,19 @@ const sortHerbsByCategory = (herbs, colormap) => {
 const drawStream = (data, colormap) => {
     clearStream();
     
+    // Add safety checks for data
+    if (!data || !Array.isArray(data) || data.length === 0) {
+        console.warn('No valid data provided for stream chart');
+        return;
+    }
+    
+    // Ensure we have at least one data point with herbs
+    const validData = data.filter(d => d && typeof d === 'object');
+    if (validData.length === 0) {
+        console.warn('No valid data points found for stream chart');
+        return;
+    }
+    
     const svg = d3.select("#chart-stream")
         .append("svg")
         .attr("width", width.value + margin.left + margin.right)
@@ -80,8 +97,13 @@ const drawStream = (data, colormap) => {
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // 过滤掉非药物属性
-    const keys = Object.keys(data[0]).filter(d => d !== 'visit' && d !== 'date');
+    // 过滤掉非药物属性并确保至少有一个herb
+    const keys = Object.keys(validData[0]).filter(d => d !== 'visit' && d !== 'date');
+    if (keys.length === 0) {
+        console.warn('No herb data found in stream data');
+        return;
+    }
+    
     const sortedKeys = sortHerbsByCategory(keys, colormap);
 
     // Create stack generator with sorted keys
@@ -90,11 +112,11 @@ const drawStream = (data, colormap) => {
         .order(d3.stackOrderNone)
         .offset(d3.stackOffsetSilhouette);
 
-    const layers = stack(data);
+    const layers = stack(validData);
 
     // Create scales
     const x = d3.scaleLinear()
-        .domain(d3.extent(data, d => d.visit))
+        .domain(d3.extent(validData, d => d.visit))
         .range([0, width.value]);
 
     const y = d3.scaleLinear()
@@ -142,9 +164,9 @@ const drawStream = (data, colormap) => {
     svg.append("g")
         .attr("transform", `translate(0,${height.value})`)
         .call(d3.axisBottom(x)
-            .ticks(data.length)
+            .ticks(validData.length)
             .tickFormat(d => {
-                const record = data.find(r => r.visit === d);
+                const record = validData.find(r => r.visit === d);
                 return record ? record.date : '';
             }))
         .selectAll("text")  
@@ -196,17 +218,29 @@ const addLabels = (svg, positions, colormap) => {
 
 // Watch for data changes
 watch(() => props.streamData, (newData) => {
-    if (newData && newData.length > 0) {
-        const processedData = processData(newData);
-        drawStream(processedData, props.herbColor);
+    if (newData && Array.isArray(newData) && newData.length > 0) {
+        try {
+            const processedData = processData(newData);
+            if (processedData && processedData.length > 0) {
+                drawStream(processedData, props.herbColor);
+            }
+        } catch (error) {
+            console.error('Error processing stream data in watch:', error);
+        }
     }
 }, { deep: true });
 
 // Initial render
 onMounted(() => {
-    if (props.streamData && props.streamData.length > 0) {
-        const processedData = processData(props.streamData);
-        drawStream(processedData, props.herbColor);
+    if (props.streamData && Array.isArray(props.streamData) && props.streamData.length > 0) {
+        try {
+            const processedData = processData(props.streamData);
+            if (processedData && processedData.length > 0) {
+                drawStream(processedData, props.herbColor);
+            }
+        } catch (error) {
+            console.error('Error processing stream data in onMounted:', error);
+        }
     }
 });
 
@@ -214,9 +248,15 @@ onMounted(() => {
 window.addEventListener('resize', () => {
     width.value = 0.85 * window.innerWidth - margin.left - margin.right;
     height.value = 0.5 * window.innerHeight - margin.top - margin.bottom;
-    if (props.streamData && props.streamData.length > 0) {
-        const processedData = processData(props.streamData);
-        drawStream(processedData, props.herbColor);
+    if (props.streamData && Array.isArray(props.streamData) && props.streamData.length > 0) {
+        try {
+            const processedData = processData(props.streamData);
+            if (processedData && processedData.length > 0) {
+                drawStream(processedData, props.herbColor);
+            }
+        } catch (error) {
+            console.error('Error processing stream data in resize:', error);
+        }
     }
 });
 </script>

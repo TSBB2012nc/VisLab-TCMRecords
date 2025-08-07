@@ -104,28 +104,31 @@ const apiConnected = ref(true);
 
 // 更新表头以匹配后端数据结构
 const headers: Header[] = [
-  { text: "患者ID", value: "id" },
-  { text: "姓名", value: "name" },
-  { text: "年龄", value: "age" },
-  { text: "性别", value: "gender" },
-  { text: "诊断", value: "diagnosis" },
-  { text: "就诊次数", value: "visit_count" }
+  { text: "患者ID", value: "PID" },
+  { text: "性别", value: "性别" },
+  { text: "病理", value: "病理" },
+  { text: "Oxford分型", value: "Oxford分型" },
+  { text: "亚组", value: "亚组" },
+  { text: "年龄", value: "年龄" },
+  { text: "诊断", value: "诊断" }
 ];
 
 const getPlaceholder = (field: string) => {
   switch (field) {
-    case 'id':
+    case 'PID':
       return '例如: 001';
-    case 'name':
-      return '患者姓名';
-    case 'age':
-      return '年龄';
-    case 'gender':
+    case '性别':
       return 'M 或 F';
-    case 'diagnosis':
+    case '病理':
+      return '病理信息';
+    case 'Oxford分型':
+      return 'Oxford分型';
+    case '亚组':
+      return '亚组信息';
+    case '年龄':
+      return '年龄';
+    case '诊断':
       return '诊断信息';
-    case 'visit_count':
-      return '就诊次数';
     default:
       return '';
   }
@@ -146,7 +149,7 @@ const deleteSelected = async () => {
 
   try {
     // 批量删除选中的患者
-    const deletePromises = selectedItems.value.map(item => deletePatient(item.id));
+    const deletePromises = selectedItems.value.map(item => deletePatient(item.PID));
     await Promise.all(deletePromises);
     
     ElMessage({
@@ -168,16 +171,16 @@ const saveItem = async () => {
   try {
     if (editingItem.value) {
       // 更新现有患者
-      await updatePatient(editingItem.value.id, currentItem.value);
+      const result = await updatePatient(editingItem.value.PID, currentItem.value);
       ElMessage({
-        message: '更新成功',
+        message: result.message || '更新成功',
         type: 'success'
       });
     } else {
       // 创建新患者
-      await createPatient(currentItem.value);
+      const result = await createPatient(currentItem.value);
       ElMessage({
-        message: '添加成功',
+        message: result.message || '添加成功',
         type: 'success'
       });
     }
@@ -194,7 +197,7 @@ const saveItem = async () => {
 const router = useRouter();
 
 const handleView = (row: TableItem) => {
-  router.push(`/patient/${row.id}`);
+  router.push(`/patient/${row.PID}`);
 };
 
 const handleEdit = (row: TableItem) => {
@@ -209,7 +212,7 @@ const hasSelection = computed(() => selectedItems.value.length > 0);
 // 添加聚合分析功能
 const analyzeSelected = () => {
   if (!selectedItems.value.length) return;
-  const idsToAnalyze = selectedItems.value.map(item => item.id);
+  const idsToAnalyze = selectedItems.value.map(item => item.PID);
   router.push({
     name: 'EnsembleView',
     query: {
@@ -232,7 +235,7 @@ const loading = computed(() => isLoading.value)
 const checkConnection = async () => {
   try {
     const health = await checkApiHealth();
-    apiConnected.value = health.status === 'OK';
+    apiConnected.value = health.status === 'healthy';
   } catch (error) {
     console.error('API连接检查失败:', error);
     apiConnected.value = false;
@@ -240,10 +243,12 @@ const checkConnection = async () => {
 };
 
 onMounted(async () => {
-  await checkConnection();
-  if (apiConnected.value) {
+  try {
+    // 先尝试加载患者列表，这本身就是一个连接测试
     await loadPatientList();
-  } else {
+    console.log('患者列表加载成功，API连接正常');
+  } catch (error) {
+    console.error('患者列表加载失败:', error);
     ElMessage({
       message: '无法连接到后端服务，请确保服务器正在运行',
       type: 'error',

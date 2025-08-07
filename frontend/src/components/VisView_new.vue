@@ -198,7 +198,7 @@ function getStreamData(patient_data) {
   <div class="d-flex flex-column w-100">
     <!-- API Status Alert -->
     <div v-if="apiStatus === 'error'" class="alert alert-warning">
-      ⚠️ 无法连接到后端服务器，请确保后端服务正在运行（端口3001）
+      ⚠️ 无法连接到后端服务器，请确保后端服务正在运行（端口8000）
     </div>
 
     <!-- Global loading state -->

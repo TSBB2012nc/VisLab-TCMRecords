@@ -1,0 +1,70 @@
+{
+  "project": {
+    "name": "TCM Records Visualization Lab",
+    "version": "1.0.0",
+    "description": "Traditional Chinese Medicine Records Visualization System",
+    "author": "VisLab Team",
+    "license": "MIT"
+  },
+  "services": {
+    "frontend": {
+      "port": 5173,
+      "host": "localhost",
+      "url": "http://localhost:5173"
+    },
+    "backend": {
+      "port": 8000,
+      "host": "0.0.0.0",
+      "url": "http://localhost:8000",
+      "api_prefix": "/api"
+    }
+  },
+  "database": {
+    "type": "json",
+    "location": "./data"
+  },
+  "features": {
+    "patient_management": true,
+    "medicine_visualization": true,
+    "stream_charts": true,
+    "line_charts": true,
+    "map_visualization": true,
+    "table_view": true,
+    "search": true,
+    "statistics": true
+  },
+  "visualization": {
+    "default_colors": {
+      "primary": "#2196F3",
+      "secondary": "#4CAF50",
+      "warning": "#FF9800",
+      "error": "#f44336"
+    },
+    "chart_settings": {
+      "stream_chart": {
+        "height": "50vh",
+        "width": "85vw",
+        "margin": {
+          "top": 20,
+          "right": 80,
+          "bottom": 60,
+          "left": 50
+        }
+      },
+      "line_chart": {
+        "height": "400px",
+        "width": "100%"
+      }
+    }
+  },
+  "development": {
+    "hot_reload": true,
+    "source_maps": false,
+    "proxy_api": true
+  },
+  "production": {
+    "minify": true,
+    "gzip": true,
+    "cdn": false
+  }
+}
