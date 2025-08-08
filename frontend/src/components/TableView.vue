@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, computed } from 'vue';
+import { computed } from 'vue';
 import { List } from '@element-plus/icons-vue'
 
 const props = defineProps({

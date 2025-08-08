@@ -13,7 +13,7 @@
 </template>
 
 <script setup>
-import { defineProps, onMounted, onUnmounted, watch } from 'vue';
+import { onMounted, onUnmounted, watch } from 'vue';
 import { TrendCharts } from '@element-plus/icons-vue';
 import { LineChart } from '../utils/visualizations';
 

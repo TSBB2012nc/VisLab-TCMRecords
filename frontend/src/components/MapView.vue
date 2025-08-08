@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, onMounted, onUnmounted, watch } from 'vue';
+import { onMounted, onUnmounted, watch } from 'vue';
 import { MapChart } from '../utils/visualizations';
 
 const props = defineProps({

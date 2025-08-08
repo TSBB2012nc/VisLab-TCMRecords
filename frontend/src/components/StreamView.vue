@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, onMounted, watch, onUnmounted, ref } from 'vue';
+import { onMounted, watch, onUnmounted, ref } from 'vue';
 import { TrendCharts } from '@element-plus/icons-vue';
 import { StreamChart } from '../utils/visualizations';
 
