@@ -1,35 +1,12 @@
-# TCM Records Visualization Lab
+# TCM Records 
 
-传统中医病历可视化系统 - 用于中医病历数据的交互式可视化分析平台。
+中医肾病病案可视化
 
-## 🌟 系统特性
 
-- **📊 多维可视化**: 河流图、折线图、地图、表格等多种可视化方式
-- **👥 患者管理**: 患者数据查看和时间线分析
-- **💊 药物分析**: 中药使用统计和分类可视化
-- **🔍 智能搜索**: 患者和药物的快速检索功能
-- **📈 统计分析**: 数据统计和趋势分析
-- **🎨 响应式设计**: 支持多种屏幕尺寸的响应式布局
 
-## 🛠️ 技术栈
+## 🚀 启动
 
-### 前端
-- **Vue.js 3** - 现代化前端框架
-- **Element Plus** - UI组件库
-- **D3.js** - 数据可视化库
-- **Pinia** - 状态管理
-- **Vue Router** - 路由管理
-- **Vite** - 构建工具
-
-### 后端
-- **FastAPI** - 高性能Web框架
-- **Python 3.8+** - 后端开发语言
-- **Pandas** - 数据处理
-- **Uvicorn** - ASGI服务器
-
-## 🚀 快速开始
-
-### 方式一：使用启动脚本（推荐）
+### 方式一：使用启动脚本
 
 **Windows:**
 ```bash
@@ -110,18 +87,12 @@ VisLab-TCMRecords/
 1. **患者数据视图**
    - 患者列表浏览
    - 患者详细信息查看
-   - 诊疗时间线分析
 
 2. **数据可视化**
    - **河流图**: 展示用药变化趋势
    - **折线图**: 显示指标变化
    - **表格视图**: 详细数据展示
-   - **地图视图**: 药物分布可视化
 
-3. **搜索与筛选**
-   - 患者信息搜索
-   - 药物信息查询
-   - 多维度数据筛选
 
 ### API接口
 
@@ -133,7 +104,6 @@ VisLab-TCMRecords/
 - `GET /api/vis/colors` - 获取可视化配置
 - `GET /api/statistics/overview` - 获取统计概览
 
-完整API文档请访问：[http://localhost:8000/docs](http://localhost:8000/docs)
 
 ## ⚙️ 配置说明
 
@@ -168,47 +138,3 @@ VITE_DEV_MODE=false
 - **Python**: 3.8+
 - **npm**: 8.0+
 
-### 代码规范
-
-- 前端使用 ESLint + Prettier
-- 后端遵循 PEP 8 规范
-- 组件命名采用 PascalCase
-- 函数命名采用 camelCase
-
-### 构建部署
-
-```bash
-# 构建前端
-cd frontend
-npm run build
-
-# 后端部署
-cd backend
-pip install -r requirements.txt
-python main.py
-```
-
-## 📝 更新日志
-
-### v1.0.0 (当前版本)
-- ✅ 完成基础可视化功能
-- ✅ 实现患者数据管理
-- ✅ 添加药物分析模块
-- ✅ 优化用户界面体验
-- ✅ 统一项目配置管理
-
-## 🤝 贡献指南
-
-欢迎提交 Issue 和 Pull Request 来改进项目！
-
-## 📄 许可证
-
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
-
-## 👥 开发团队
-
-VisLab Team - 北京大学医学部
-
----
-
-如有问题或建议，请通过 GitHub Issues 联系我们。
