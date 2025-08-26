@@ -383,3 +383,7 @@ coverage/
 # Cache directories
 .cache/
 .temp/
+
+# temp files
+.va_test/
+.va_test/*
